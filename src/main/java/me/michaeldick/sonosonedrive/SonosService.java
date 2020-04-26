@@ -47,6 +47,7 @@ import com.mixpanel.mixpanelapi.MessageBuilder;
 import com.mixpanel.mixpanelapi.MixpanelAPI;
 import com.sonos.services._1.AbstractMedia;
 import com.sonos.services._1.AddToContainerResult;
+import com.sonos.services._1.AlbumArtUrl;
 import com.sonos.services._1.AppLinkResult;
 import com.sonos.services._1.ContentKey;
 import com.sonos.services._1.CreateContainerResult;
@@ -280,8 +281,9 @@ public class SonosService implements SonosSoap {
 					.post(Entity.entity(form,MediaType.APPLICATION_FORM_URLENCODED_TYPE), String.class);
 			client.close();
 		} catch (NotAuthorizedException e) {			
-			logger.info(householdId.hashCode() +": login NotAuthorized");
+			logger.info(householdId.hashCode() +": login NotAuthorized, sending LOGIN_INVALID");
 			logger.debug(householdId.hashCode() +": "+e.getMessage());
+			logger.error(e.getResponse().readEntity(String.class));
 			throwSoapFault(LOGIN_INVALID);
 		} catch (BadRequestException e) {
 			logger.error("Bad request: "+e.getMessage());
@@ -408,7 +410,7 @@ public class SonosService implements SonosSoap {
 		
 		GraphAuth auth = getGraphAuth();	
 				
-		String json = graphApiGetRequest("me/drive/items/"+id.replaceAll(SonosService.AUDIO+":","")+"", auth);
+		String json = graphApiGetRequest("me/drive/items/"+id.replaceAll(SonosService.AUDIO+":","")+"", 1, auth);
 		
 		JsonParser parser = new JsonParser();
 		JsonElement element = parser.parse(json);
@@ -425,7 +427,7 @@ public class SonosService implements SonosSoap {
 		
 		GraphAuth auth = getGraphAuth();	
 		
-		String json = graphApiGetRequest("me/drive/items/"+parameters.getId(), auth);
+		String json = graphApiGetRequest("me/drive/items/"+parameters.getId(), 1, auth);
 		
 		JsonParser parser = new JsonParser();
 		JsonElement element = parser.parse(json);
@@ -467,44 +469,47 @@ public class SonosService implements SonosSoap {
 		}        
 		
         GetMetadataResponse response = new GetMetadataResponse();
+        MediaList ml = new MediaList();
         
-		if(parameters.getId().equals("root")) {
-			String json = graphApiGetRequest("/me/drive/root/children", auth);						
-			response.setGetMetadataResult( parseMediaListResponse(auth.getHouseholdId(), json));
+		if(parameters.getId().equals("root")) {						
+			String json = graphApiGetRequest("/me/drive/root/children", parameters.getCount(), auth);						
+			ml = parseMediaListResponse(auth.getHouseholdId(), json);
 		} else if(parameters.getId().startsWith(SonosService.FOLDER)) {
-			String json = graphApiGetRequest("me/drive/items/"+parameters.getId().replaceAll(SonosService.FOLDER+":","")+"/children", auth);						
-			response.setGetMetadataResult( parseMediaListResponse(auth.getHouseholdId(), json));
+			String json = graphApiGetRequest(String.format("/me/drive/items/%s/children", parameters.getId().replaceAll(SonosService.FOLDER+":","")), parameters.getCount(), auth);						
+			ml = parseMediaListResponse(auth.getHouseholdId(), json);
 		} else if(parameters.getId().equals(ItemType.SEARCH.value())) {			
 									
 		} else {
 			return null;
 		}
-		
-		String logLine = auth.getHouseholdId().hashCode() + ": Got Metadata for "+parameters.getId()+", "+response.getGetMetadataResult().getCount();
-		logLine += " (";
-		for(AbstractMedia m : response.getGetMetadataResult().getMediaCollectionOrMediaMetadata()) {
-			logLine += m.getId().substring(m.getId().length() - 2) + " ";
-		}
-		logLine += ")";
-		
-		logger.info(logLine);
+				
+		ml.setIndex(0);
+		response.setGetMetadataResult(ml);
+				
+		logger.info(auth.getHouseholdId().hashCode() + ": Got Metadata for "+parameters.getId()+", "+response.getGetMetadataResult().getCount());
 		return response;
 	}
 	
-	private String graphApiGetRequest(String path, GraphAuth auth) {
+	private String graphApiGetRequest(String path, int count, GraphAuth auth) {
 		String json = "";
 		try {	
 			Client client = ClientBuilder.newClient();
 			WebTarget target = client
 					.target(GRAPH_API_URI)
-					.path(path);
+					.path(path)					
+					.queryParam("expand", "thumbnails");
+					//.queryParam("filter", "audio ne null or folder ne null");
+			if(count > 1) {
+				target = target.queryParam("top", count);
+			}
 			json = target.request(MediaType.APPLICATION_JSON_TYPE)
 				  .header("Authorization", "Bearer " + auth.getDeviceCode())
 				  .get(String.class);
 			client.close();
 			
 		} catch (NotAuthorizedException e) {
-			logger.debug("request NotAuthorized: "+e.getMessage());
+			logger.debug("request NotAuthorized: "+e.getMessage()+", sending AUTH_TOKEN_EXPIRED");
+			logger.error(e.getResponse().readEntity(String.class));
 			throwSoapFault(AUTH_TOKEN_EXPIRED);		
 		} catch (BadRequestException e) {
 			logger.error("Bad request: "+e.getMessage());
@@ -523,7 +528,7 @@ public class SonosService implements SonosSoap {
         	MediaList ml = new MediaList();
         	List<AbstractMedia> mcList = ml.getMediaCollectionOrMediaMetadata();    
         	
-            for (int i = 0; i < mainResultList.size() && i < 100; i++) { 
+            for (int i = 0; i < mainResultList.size(); i++) { 
             	Item m = new Item(mainResultList.get(i).getAsJsonObject());
             	if(m.getType()==Item.FileType.folder) {
             		mcList.add(buildMC(m));            			
@@ -533,7 +538,8 @@ public class SonosService implements SonosSoap {
 			}
 			ml.setCount(mcList.size());
 			ml.setIndex(0);
-			ml.setTotal(mcList.size());				
+			ml.setTotal(mcList.size());
+			//ml.setTotal(element.getAsJsonObject().get("@odata.count").getAsInt());				
         	logger.debug("Got program list: "+mcList.size());
         	return ml;
         } else {
@@ -554,7 +560,12 @@ public class SonosService implements SonosSoap {
 			}
 			if(m.getArtist() != null) {
 				mc.setArtist(m.getArtist());
-			}												
+			}
+			if(m.getThumbnail() != null) {
+				AlbumArtUrl art = new AlbumArtUrl();
+				art.setValue(m.getThumbnail());
+				mc.setAlbumArtURI(art);
+			}
 			mc.setCanPlay(true);
 			mc.setCanEnumerate(false);
 			
@@ -578,7 +589,7 @@ public class SonosService implements SonosSoap {
 		mmd.setId(m.getId());		
 		mmd.setMimeType(m.getMimeType());		
 		mmd.setItemType(ItemType.TRACK);		
-		
+
 		if(m.getTitle() != null) {
 			mmd.setTitle(m.getTitle());
 		} else {
@@ -587,12 +598,21 @@ public class SonosService implements SonosSoap {
 		
 		if(m.getArtist() != null) {
 			tmd.setArtist(m.getArtist());
-		}									
+		}								
+		if(m.getAlbum() != null) {
+			tmd.setAlbum(m.getAlbum());
+		}
 		
 		if (m.getDuration() > 0) {
 			tmd.setDuration(m.getDuration());
 		}
-
+		if(m.getThumbnail() != null) {
+			AlbumArtUrl art = new AlbumArtUrl();
+			art.setValue(m.getThumbnail());
+			tmd.setAlbumArtURI(art);
+		}
+		tmd.setTrackNumber(m.getTrack());
+		
 		mmd.setTrackMetadata(tmd);		
 		return mmd;
 	}	

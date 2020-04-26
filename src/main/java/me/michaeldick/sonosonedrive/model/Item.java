@@ -1,5 +1,8 @@
 package me.michaeldick.sonosonedrive.model;
 
+import javax.sound.midi.Track;
+
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 public class Item {
@@ -12,12 +15,18 @@ public class Item {
 	String mimeType;
 	int duration;
 	String album;
-	String artist;	
+	String artist;
     String title;
     String parentId;
     String fileUri;
+    String thumbnail;
+    int track;
         
-    public Item(JsonObject data) {    	    	
+    public int getTrack() {
+		return track;
+	}
+
+	public Item(JsonObject data) {    	    	
 		id = data.has("id") ? data.get("id").getAsString() : null;		
     	name = data.has("name") ? data.get("name").getAsString() : null;    	  
 
@@ -34,6 +43,7 @@ public class Item {
         		artist = audioAttributes.has("artist") ? audioAttributes.get("artist").getAsString() : null;
         		title = audioAttributes.has("title") ? audioAttributes.get("title").getAsString() : null;
         		duration = audioAttributes.has("duration") ? audioAttributes.get("duration").getAsInt()/1000 : null;    
+        		track = audioAttributes.has("track") ? audioAttributes.get("track").getAsInt() : 1;
         	} else {
         		type = FileType.file;        		
         	}    		
@@ -43,8 +53,19 @@ public class Item {
     		
     	} else if (data.has("folder") ) {
     		type = FileType.folder;
-    	}    	    	  
+    	} 
+    	
+    	if(data.has("thumbnails")) {
+    		JsonArray thumbnails = data.getAsJsonArray("thumbnails");
+    		if(thumbnails.size() > 0) {
+    			thumbnail = thumbnails.get(0).getAsJsonObject().getAsJsonObject("small").get("url").getAsString();
+    		}    		
+    	}
     }
+
+	public String getThumbnail() {
+		return thumbnail;
+	}
 
 	public FileType getType() {
 		return type;
