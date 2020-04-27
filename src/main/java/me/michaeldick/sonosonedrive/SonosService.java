@@ -112,6 +112,7 @@ public class SonosService implements SonosSoap {
     public static final String SERVICE_UNKNOWN_ERROR = "Client.ServiceUnknownError";
     public static final String SERVICE_UNAVAILABLE = "Client.ServiceUnavailable";
     public static final String ITEM_NOT_FOUND = "Client.ItemNotFound"; 
+    public static final String TOKEN_REFRESH_REQUIRED = "Client.TokenRefreshRequired";
     public static final String AUTH_TOKEN_EXPIRED = "Client.AuthTokenExpired";
     public static final String NOT_LINKED_RETRY = "Client.NOT_LINKED_RETRY";
     public static final String NOT_LINKED_FAILURE = "Client.NOT_LINKED_FAILURE";
@@ -484,6 +485,7 @@ public class SonosService implements SonosSoap {
 			
 			String json = graphApiGetRequest(path, parameters.getCount(), skipToken, auth);						
 			ml = parseMediaListResponse(auth.getHouseholdId(), json);
+			// Remove 1 since personal vault is not included in response
 			ml.setTotal(ml.getTotal()-1);
 		} else if(parameters.getId().startsWith(SonosService.FOLDER)) {
 			String path = String.format("/me/drive/items/%s/children", parameters.getId().replaceAll(SonosService.FOLDER+":",""));
@@ -549,11 +551,9 @@ public class SonosService implements SonosSoap {
 			client.close();
 			
 		} catch (NotAuthorizedException e) {
-			logger.debug("request NotAuthorized: "+e.getMessage()+", sending AUTH_TOKEN_EXPIRED");
-			logger.debug("Device Token"+auth.getDeviceCode());
-			logger.debug("Refresh Token"+auth.getRefreshToken());
-			logger.error(e.getResponse().readEntity(String.class));
-			throwSoapFault(AUTH_TOKEN_EXPIRED);		
+			logger.debug("request NotAuthorized: "+e.getMessage()+", trying to refresh token");		
+			GraphAuth newAuth = refreshToken();
+			throwSoapFault(TOKEN_REFRESH_REQUIRED, newAuth);		
 		} catch (BadRequestException e) {
 			logger.error("Bad request: "+e.getMessage());
 			logger.error(e.getResponse().readEntity(String.class));
@@ -733,6 +733,23 @@ public class SonosService implements SonosSoap {
 	public DeviceAuthTokenResult refreshAuthToken() throws CustomFault {
 		logger.debug("refreshAuthToken");
 
+		return null;			
+	}
+	
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Private methods
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////	
+	
+	private GraphAuth getGraphAuth() {
+		Credentials creds = getCredentialsFromHeaders();
+		if(creds == null)
+			throwSoapFault(SESSION_INVALID);
+		
+		logger.debug("Got userId from header:"+creds.getLoginToken().getHouseholdId());		
+		return new GraphAuth(creds.getLoginToken().getHouseholdId(), creds.getLoginToken().getToken(), creds.getLoginToken().getKey());	
+	}
+	
+	private GraphAuth refreshToken() {
 		GraphAuth auth = getGraphAuth();		
 		
 		Form form = new Form();
@@ -754,62 +771,38 @@ public class SonosService implements SonosSoap {
 			logger.info(auth.getHouseholdId().hashCode() +": Not linked retry");
 			logger.debug(auth.getHouseholdId().hashCode() +": "+e.getMessage());
 			logger.debug(auth.getHouseholdId().hashCode() +": Detailed response: "+e.getResponse().readEntity(String.class));
-			throwSoapFault(NOT_LINKED_RETRY, "NOT_LINKED_RETRY", "5");
+			throwSoapFault(AUTH_TOKEN_EXPIRED);
 		} catch (BadRequestException e) {
 			logger.error("Bad request: "+e.getMessage());
-			throwSoapFault(NOT_LINKED_FAILURE, "NOT_LINKED_FAILURE", "6");
+			throwSoapFault(SERVICE_UNKNOWN_ERROR);
 		}
 		
 		JsonParser parser = new JsonParser();
         JsonElement element = parser.parse(json);
-        String access_token = "";
-        String refresh_token = ""; 
+        GraphAuth newAuth = new GraphAuth(); 
         if (element.isJsonObject()) {
         	JsonObject root = element.getAsJsonObject();
-        	access_token = root.get("access_token").getAsString();      
-        	refresh_token = root.get("refresh_token").getAsString();
-            logger.info(auth.getHouseholdId().hashCode() +": Got token");
+        	newAuth.setDeviceCode(root.get("access_token").getAsString());      
+        	newAuth.setRefreshToken(root.get("refresh_token").getAsString());
+            logger.info(auth.getHouseholdId().hashCode() +": Got refreshed token");
         }
-		    
-        JSONObject sentEvent = messageBuilder.event(auth.getHouseholdId(), "getDeviceAuthToken", null);
-        
-        ClientDelivery delivery = new ClientDelivery();
-        delivery.addMessage(sentEvent);
-        
-        MixpanelAPI mixpanel = new MixpanelAPI();
-        try {
-			mixpanel.deliver(delivery);
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			logger.debug("Mixpanel error: getDeviceLinkCode");
-		}
-        
-        DeviceAuthTokenResult response = new DeviceAuthTokenResult();
-		response.setAuthToken(access_token);	
-		response.setPrivateKey(refresh_token);
-		return response;
-				
-				
-	}
-	
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Private methods
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////	
-	
-	private GraphAuth getGraphAuth() {
-		Credentials creds = getCredentialsFromHeaders();
-		if(creds == null)
-			throwSoapFault(SESSION_INVALID);
-		
-		logger.debug("Got userId from header:"+creds.getLoginToken().getHouseholdId());		
-		return new GraphAuth(creds.getLoginToken().getHouseholdId(), creds.getLoginToken().getToken(), creds.getLoginToken().getKey());	
+		           
+        return newAuth;
 	}
 	
 	private static void throwSoapFault(String faultMessage) {
-		throwSoapFault(faultMessage, "", "");
+		throwSoapFault(faultMessage, "", "", null);
 	}
 	
-	private static void throwSoapFault(String faultMessage, String ExceptionDetail, String SonosError) throws RuntimeException {
+	private static void throwSoapFault(String faultMessage, GraphAuth newAuth) {
+		throwSoapFault(faultMessage, "", "", newAuth);
+	}
+	
+	private static void throwSoapFault(String faultMessage, String ExceptionDetail, String SonosError) {
+		throwSoapFault(faultMessage, ExceptionDetail, SonosError, null);
+	}
+	
+	private static void throwSoapFault(String faultMessage, String ExceptionDetail, String SonosError, GraphAuth newAuth) throws RuntimeException {
 		SOAPFault soapFault;
 		try {
             soapFault = SOAPFactory.newInstance(SOAPConstants.SOAP_1_1_PROTOCOL).createFault();
@@ -822,6 +815,14 @@ public class SonosService implements SonosSoap {
     	        el1.setValue(ExceptionDetail);
 	            SOAPElement el = detail.addChildElement("SonosError");
 	            el.setValue(SonosError);	            
+            }
+            if(newAuth != null) {
+            	Detail detail = soapFault.addDetail();
+            	SOAPElement container = detail.addChildElement("refreshAuthTokenResult");
+            	SOAPElement el1 = container.addChildElement("authToken");
+            	el1.setValue(newAuth.getDeviceCode());
+            	SOAPElement el2 = container.addChildElement("privateKey");
+            	el2.setValue(newAuth.getRefreshToken());
             }
             
         } catch (Exception e2) {
