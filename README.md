@@ -1,24 +1,22 @@
-# NPR One Sonos Service [![Build Status](https://travis-ci.org/bertique/SonosNPROneServer.svg?branch=master)](https://travis-ci.org/bertique/SonosNPROneServer)
-I love my Sonos system and I really like the [NPR One app](http://www.npr.org/about/products/npr-one/). That’s why I have built this service.
+# OneDrive Sonos Service [![Build Status](https://travis-ci.org/bertique/SonosOneDriveServer.svg?branch=master)](https://travis-ci.org/bertique/SonosOneDriveServer)
+After building the [NPR One Service for Sonos](https://github.com/bertique/SonosNPROneServer), I recently found myself looking for a way to play my music stored on [OneDrive](). Seeing that OneDrive provides an [easy to user API](https://docs.microsoft.com/en-us/onedrive/developer/rest-api/?view=odsp-graph-online), I built this service.
 
 Issues and pull-requests welcome.
 
-# How do I add NPR One to my Sonos?
-Check out the instructions at [http://michaeldick.me/sonos-nprone/](http://michaeldick.me/sonos-nprone/)
+# How do I add OneDrive to my Sonos?
+TBD
 
 # How do I run the service myself?
 
 ## Prerequisites
-* [NPR One app registration](http://dev.npr.org)
+* [Microsoft app registration](https://docs.microsoft.com/en-us/onedrive/developer/rest-api/getting-started/app-registration?view=odsp-graph-online)
 * [Heroku account (or similar)](https://heroku.com)
 
 ## Run the service locally
 * Clone this repo
 * Import into Eclipse as Maven project
 * Create new Maven build configuration with environment variables:
- * NPR_CLIENT_ID
- * NPR_CLIENT_SECRET
- * MIXPANEL_PROJECT_TOKEN
+* GRAPH_CLIENT_ID 
 * Generate the ssl key once through Maven: *keytool:generateKeyPair*
 * Run Maven target: *tomcat7:run-war*
 
