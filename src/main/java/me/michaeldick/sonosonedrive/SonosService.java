@@ -248,7 +248,23 @@ public class SonosService implements SonosSoap {
 	public LastUpdate getLastUpdate() throws CustomFault {
 		logger.debug("getLastUpdate");
 	
-		return null;
+		GraphAuth auth = getGraphAuth();
+		
+		String path = "/drive/root/delta";		
+		String json = graphApiGetRequest(path, 1, null, auth);						
+		
+		LastUpdate response = new LastUpdate();        
+		JsonParser parser = new JsonParser();
+		JsonElement element = parser.parse(json);			        							
+		JsonArray mainResultList = element.getAsJsonObject().getAsJsonArray("value");			
+		String lastUpdate = null;
+		
+        if (mainResultList != null && mainResultList.size() > 0) {
+        	lastUpdate = mainResultList.get(0).getAsJsonObject().get("lastModifiedDateTime").getAsString();
+        }
+        logger.debug("Last modifed: "+lastUpdate);
+		response.setCatalog(lastUpdate);	
+		return response;
 	}
 
 	@Override
