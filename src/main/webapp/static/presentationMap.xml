@@ -2,7 +2,7 @@
 	<PresentationMap type="Search">
     <Match>
         <SearchCategories>
-            <Category mappedId="podcasts" id="podcasts"/>            
+            <Category mappedId="files" id="tracks"/>            
         </SearchCategories>
     </Match>
 </PresentationMap>

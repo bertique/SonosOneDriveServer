@@ -104,7 +104,8 @@ public class SonosService implements SonosSoap {
     public static final String DEFAULT = "default";
     public static final String FOLDER = "folder";
     public static final String FILE = "file";
-    public static final String AUDIO = "audio";    
+    public static final String AUDIO = "audio"; 
+    public static final String FILES = "files";
     
     // Error codes
     public static final String SESSION_INVALID = "Client.SessionIdInvalid";
@@ -497,8 +498,18 @@ public class SonosService implements SonosSoap {
 			
 			String json = graphApiGetRequest(path, parameters.getCount(), skipToken, auth);						
 			ml = parseMediaListResponse(auth.getHouseholdId(), json);
-		} else if(parameters.getId().equals(ItemType.SEARCH.value())) {			
-									
+		} else if(parameters.getId().equals(ItemType.SEARCH.value())) {						
+			List<AbstractMedia> mcList = ml.getMediaCollectionOrMediaMetadata();
+			
+			MediaCollection mc1 = new MediaCollection();			
+			mc1.setTitle("Files");
+			mc1.setId(SonosService.FILES);
+			mc1.setItemType(ItemType.SEARCH);
+			mc1.setCanPlay(false);
+			mcList.add(mc1);			 					
+			
+			ml.setCount(mcList.size());
+			ml.setTotal(mcList.size());
 		} else {
 			return null;
 		}
@@ -544,7 +555,7 @@ public class SonosService implements SonosSoap {
 			}
 			if(count > 100) {
 				target = target.queryParam("select", "id");
-			}
+			}		
 			json = target.request(MediaType.APPLICATION_JSON_TYPE)
 				  .header("Authorization", "Bearer " + auth.getDeviceCode())
 				  .get(String.class);
@@ -580,8 +591,12 @@ public class SonosService implements SonosSoap {
             		mcList.add(buildMMD(m));
             	}
 			}
-			ml.setCount(mcList.size());		
-			ml.setTotal(element.getAsJsonObject().get("@odata.count").getAsInt());				
+			ml.setCount(mcList.size());
+			if(element.getAsJsonObject().has("@odata.count")) {
+				ml.setTotal(element.getAsJsonObject().get("@odata.count").getAsInt());
+			} else {
+				ml.setTotal(mcList.size());
+			}							
         	logger.debug("Got program list: "+mcList.size());
         	return ml;
         } else {
@@ -712,7 +727,25 @@ public class SonosService implements SonosSoap {
 	@Override
 	public SearchResponse search(Search parameters) throws CustomFault {
 		logger.debug("search");
-		return null;
+		
+		GraphAuth auth = getGraphAuth();
+		
+		String path = String.format("/me/drive/root/search(q='%s')", parameters.getTerm());
+		String skipToken = null;
+
+		if(parameters.getIndex() > 0) {
+			skipToken = getSkipToken(path, parameters.getIndex(), auth);			
+		}
+		
+		String json = graphApiGetRequest(path, parameters.getCount(), skipToken, auth);						
+		SearchResponse response = new SearchResponse();
+        MediaList ml = new MediaList();
+		ml = parseMediaListResponse(auth.getHouseholdId(), json);
+		// Remove 1 since personal vault is not included in response
+		ml.setTotal(ml.getTotal());
+		ml.setIndex(parameters.getIndex());
+		response.setSearchResult(ml);	
+		return response;
 	}
 
 	@Override
