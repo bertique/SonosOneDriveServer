@@ -587,7 +587,7 @@ public class SonosService implements SonosSoap {
 		if(m.getType().equals(Item.FileType.audio)) {			
 			mc.setId(SonosService.AUDIO+":"+m.getId());
 			mc.setItemType(ItemType.TRACK);
-			if(m.getTitle() != null) {
+			if(m.getTitle() != null && !m.getTitle().isEmpty()) {
 				mc.setTitle(m.getTitle());
 			} else {
 				mc.setTitle(m.getName());
@@ -631,7 +631,7 @@ public class SonosService implements SonosSoap {
 		mmd.setMimeType(m.getMimeType());		
 		mmd.setItemType(ItemType.TRACK);		
 
-		if(m.getTitle() != null) {
+		if(m.getTitle() != null && !m.getTitle().isEmpty()) {
 			mmd.setTitle(m.getTitle());
 		} else {
 			mmd.setTitle(m.getName());
