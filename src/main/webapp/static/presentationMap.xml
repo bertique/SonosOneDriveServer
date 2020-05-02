@@ -1,9 +1,18 @@
 <Presentation>
 	<PresentationMap type="Search">
-    <Match>
-        <SearchCategories>
-            <Category mappedId="files" id="tracks"/>            
-        </SearchCategories>
-    </Match>
-</PresentationMap>
+		<Match>
+			<SearchCategories>
+				<Category mappedId="files" id="tracks" />
+			</SearchCategories>
+		</Match>
+	</PresentationMap>
+	<PresentationMap type="DisplayType">
+		<DisplayType id="audio">
+			<Lines>
+				<Line token="title" />
+				<Line token="artist" />
+			</Lines>
+		</DisplayType>
+	</PresentationMap>
 </Presentation>
+

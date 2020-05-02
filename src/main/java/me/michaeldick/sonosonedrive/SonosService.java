@@ -629,7 +629,8 @@ public class SonosService implements SonosSoap {
 		
 		mmd.setId(m.getId());		
 		mmd.setMimeType(m.getMimeType());		
-		mmd.setItemType(ItemType.TRACK);		
+		mmd.setItemType(ItemType.TRACK);
+		mmd.setDisplayType("audio");
 
 		if(m.getTitle() != null && !m.getTitle().isEmpty()) {
 			mmd.setTitle(m.getTitle());
@@ -798,6 +799,7 @@ public class SonosService implements SonosSoap {
 			throwSoapFault(AUTH_TOKEN_EXPIRED);
 		} catch (BadRequestException e) {
 			logger.error("Bad request: "+e.getMessage());
+			logger.debug(auth.getHouseholdId().hashCode() +": Detailed response: "+e.getResponse().readEntity(String.class));
 			throwSoapFault(SERVICE_UNKNOWN_ERROR);
 		}
 		
