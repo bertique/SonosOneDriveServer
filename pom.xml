@@ -11,7 +11,7 @@
 	<url>http://michaeldick.me</url>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<tomcat.version>7.0.99</tomcat.version>
+		<tomcat.version>7.0.96</tomcat.version>
 	</properties>
 	<repositories>
 		<repository>
