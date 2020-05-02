@@ -252,9 +252,8 @@ public class SonosService implements SonosSoap {
 		String path = "/drive/root/delta";		
 		String json = graphApiGetRequest(path, 1, null, auth);						
 		
-		LastUpdate response = new LastUpdate();        
-		JsonParser parser = new JsonParser();
-		JsonElement element = parser.parse(json);			        							
+		LastUpdate response = new LastUpdate();        		
+		JsonElement element = JsonParser.parseString(json);			        							
 		JsonArray mainResultList = element.getAsJsonObject().getAsJsonArray("value");			
 		String lastUpdate = null;
 		
@@ -298,8 +297,7 @@ public class SonosService implements SonosSoap {
 			throwSoapFault(SERVICE_UNKNOWN_ERROR);
 		}
 		
-		JsonParser parser = new JsonParser();
-        JsonElement element = parser.parse(json);
+        JsonElement element = JsonParser.parseString(json);
         String verification_uri = "";
         String user_code = "";
         String device_code = "";
@@ -349,8 +347,7 @@ public class SonosService implements SonosSoap {
 			logger.debug(householdId.hashCode() +": Detailed response: "+e.getResponse().readEntity(String.class));
 			throwSoapFault(NOT_LINKED_RETRY, "NOT_LINKED_RETRY", "5");
 		} catch (BadRequestException e) {
-			JsonParser parser = new JsonParser();
-			JsonObject element = parser.parse(e.getResponse().readEntity(String.class)).getAsJsonObject();
+			JsonObject element = JsonParser.parseString(e.getResponse().readEntity(String.class)).getAsJsonObject();			
 			
 		    if(element.get("error").getAsString().equals("authorization_pending")) {
 				logger.info(householdId.hashCode() +": Not linked retry");				
@@ -361,8 +358,7 @@ public class SonosService implements SonosSoap {
 			throwSoapFault(NOT_LINKED_FAILURE, "NOT_LINKED_FAILURE", "6");
 		}
 		
-		JsonParser parser = new JsonParser();
-        JsonElement element = parser.parse(json);
+		JsonElement element = JsonParser.parseString(json);
         String access_token = "";
         String refresh_token = ""; 
         if (element.isJsonObject()) {
@@ -409,8 +405,7 @@ public class SonosService implements SonosSoap {
 				
 		String json = graphApiGetRequest("me/drive/items/"+id.replaceAll(SonosService.AUDIO+":","")+"", 1, null, auth);
 		
-		JsonParser parser = new JsonParser();
-		JsonElement element = parser.parse(json);
+		JsonElement element = JsonParser.parseString(json);
 		
 		Item m = new Item(element.getAsJsonObject());
             	
@@ -425,9 +420,8 @@ public class SonosService implements SonosSoap {
 		GraphAuth auth = getGraphAuth();	
 		
 		String json = graphApiGetRequest("me/drive/items/"+parameters.getId(), 1, null, auth);
-		
-		JsonParser parser = new JsonParser();
-		JsonElement element = parser.parse(json);
+					
+		JsonElement element = JsonParser.parseString(json);
 		
 		Item m = new Item(element.getAsJsonObject());
 		
@@ -509,8 +503,7 @@ public class SonosService implements SonosSoap {
 	private String getSkipToken(String path, int index, GraphAuth auth) {
 		String skipToken = null;
 		String json = graphApiGetRequest(path, index, null, auth);
-		JsonParser parser = new JsonParser();
-		JsonElement element = parser.parse(json);			        					
+		JsonElement element = JsonParser.parseString(json);					        				
 		Pattern pattern = Pattern.compile("\\$skiptoken=(.+)", Pattern.CASE_INSENSITIVE);
 		Matcher matcher = pattern.matcher(element.getAsJsonObject().get("@odata.nextLink").getAsString());
 		if (matcher.find())
@@ -558,8 +551,7 @@ public class SonosService implements SonosSoap {
 	}
 	
 	private static MediaList parseMediaListResponse(String userId, String json) {
-		JsonParser parser = new JsonParser();
-		JsonElement element = parser.parse(json);
+		JsonElement element = JsonParser.parseString(json);		
 	        
 		JsonArray mainResultList = element.getAsJsonObject().getAsJsonArray("value");			
 		
