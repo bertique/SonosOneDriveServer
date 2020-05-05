@@ -36,7 +36,6 @@ import org.apache.cxf.jaxb.JAXBDataBinding;
 import org.apache.cxf.jaxws.context.WrappedMessageContext;
 import org.apache.cxf.message.Message;
 import org.apache.log4j.Logger;
-import org.eclipse.jetty.server.Authentication.SendSuccess;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.w3c.dom.Node;
@@ -249,6 +248,8 @@ public class SonosService implements SonosSoap {
 	
 		GraphAuth auth = getGraphAuth();
 		
+		sentMetricsEvent(auth.getHouseholdId(), "getLastUpdate", null);
+		
 		String path = "/drive/root/delta";		
 		String json = graphApiGetRequest(path, 1, null, auth);						
 		
@@ -438,19 +439,19 @@ public class SonosService implements SonosSoap {
 		GraphAuth auth = getGraphAuth();		
         
         // Mixpanel event
-		if(parameters.getId().equals(SonosService.PROGRAM+":"+SonosService.DEFAULT)
-			|| parameters.getId().equals(ItemType.SEARCH.value())) {
-						
-		        JSONObject props = new JSONObject();
-		        try {
-					props.put("Program", parameters.getId());
-				} catch (JSONException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}        
-		        
-		        sentMetricsEvent(auth.getHouseholdId(), "getMetadata", props);			        		      
-		}        
+//		if(parameters.getId().equals(SonosService.PROGRAM+":"+SonosService.DEFAULT)
+//			|| parameters.getId().equals(ItemType.SEARCH.value())) {
+//						
+//		        JSONObject props = new JSONObject();
+//		        try {
+//					props.put("Program", parameters.getId());
+//				} catch (JSONException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}        
+//		        
+//		        sentMetricsEvent(auth.getHouseholdId(), "getMetadata", props);			        		      
+//		}        
 		
         GetMetadataResponse response = new GetMetadataResponse();
         MediaList ml = new MediaList();
