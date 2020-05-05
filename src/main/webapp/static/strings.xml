@@ -80,7 +80,7 @@
     	<string stringId="Error2Message">Custom Unsupported Operation error string.</string>
     </stringtable>
     <stringtable rev="0" xml:lang="zh-CN">
-                <string stringId="ServicePromo">Connect NPR One to your Sonos. Comments or questions email b.michael.dick@gmail.com.</string>
+                <string stringId="ServicePromo">Connect OneDrive to your Sonos. Comments or questions email b.michael.dick@gmail.com.</string>
                 <string stringId="SIGN_IN">Auhtorize</string>
 		<string stringId="RATE_UP">Interesting!</string>
 		<string stringId="SUCCESS_UP">Got it!</string>
