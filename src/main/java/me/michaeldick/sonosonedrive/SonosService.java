@@ -303,9 +303,9 @@ public class SonosService implements SonosSoap {
         String device_code = "";
         if (element.isJsonObject()) {
         	JsonObject root = element.getAsJsonObject();
-            verification_uri = root.get("verification_uri").getAsString();
-            user_code = root.get("user_code").getAsString();
-            device_code = root.get("device_code").getAsString();
+            verification_uri = root.has("verification_uri") ? root.get("verification_uri").getAsString() : null;
+            user_code = root.has("user_code") ? root.get("user_code").getAsString() : null;
+            device_code = root.has("device_code") ? root.get("device_code").getAsString() : null;
             logger.info(householdId.hashCode() +": Got verification uri");
         }
 		    
@@ -363,8 +363,8 @@ public class SonosService implements SonosSoap {
         String refresh_token = ""; 
         if (element.isJsonObject()) {
         	JsonObject root = element.getAsJsonObject();
-        	access_token = root.get("access_token").getAsString();      
-        	refresh_token = root.get("refresh_token").getAsString();
+        	access_token = root.has("access_token") ? root.get("access_token").getAsString() : null;      
+        	refresh_token = root.has("refresh_token") ? root.get("refresh_token").getAsString() : null;
             logger.info(householdId.hashCode() +": Got token");
         }
 		    

@@ -1,4 +1,4 @@
-package me.michaeldick.sonosnpr;
+package me.michaeldick.sonosonedrive;
 
 import static javax.servlet.http.HttpServletResponse.SC_OK;
 
