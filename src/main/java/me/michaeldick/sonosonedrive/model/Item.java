@@ -21,8 +21,13 @@ public class Item {
     String fileUri;
     String thumbnail;
     int track;
+    int childCount;
         
-    public int getTrack() {
+    public int getChildCount() {
+		return childCount;
+	}
+
+	public int getTrack() {
 		return track;
 	}
 
@@ -53,6 +58,8 @@ public class Item {
     		
     	} else if (data.has("folder") ) {
     		type = FileType.folder;
+    		JsonObject folderAttributes = data.getAsJsonObject("folder");
+    		childCount = folderAttributes.has("childCount") ? folderAttributes.get("childCount").getAsInt() : 0;
     	} 
     	
     	if(data.has("thumbnails")) {

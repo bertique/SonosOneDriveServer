@@ -493,7 +493,7 @@ public class SonosService implements SonosSoap {
 		} else {
 			return null;
 		}
-				
+		
 		ml.setIndex(parameters.getIndex());
 		response.setGetMetadataResult(ml);
 				
@@ -532,7 +532,7 @@ public class SonosService implements SonosSoap {
 			if(skipToken != null) {
 				target = target.queryParam("$skipToken", skipToken);
 			}
-			if(count > 100) {
+			if(count > 100 && count != Integer.MAX_VALUE) {
 				target = target.queryParam("select", "id");
 			}		
 			json = target.request(MediaType.APPLICATION_JSON_TYPE)
@@ -614,8 +614,12 @@ public class SonosService implements SonosSoap {
 		} else if(m.getType().equals(Item.FileType.folder)) {
 			mc.setId(SonosService.FOLDER+":"+m.getId());
 			mc.setItemType(ItemType.COLLECTION);
-			mc.setTitle(m.getName());			
-			mc.setCanPlay(false);
+			mc.setTitle(m.getName());
+			if(m.getChildCount() < 40) {
+				mc.setCanPlay(true);
+			} else {
+				mc.setCanPlay(false);
+			}			
 			mc.setCanEnumerate(true);	
 		}
 			
