@@ -1,6 +1,8 @@
 # OneDrive Sonos Service [![Build Status](https://travis-ci.org/bertique/SonosOneDriveServer.svg?branch=master)](https://travis-ci.org/bertique/SonosOneDriveServer)
 After building the [NPR One Service for Sonos](https://github.com/bertique/SonosNPROneServer), I recently found myself looking for a way to play my music stored on [OneDrive](). Seeing that OneDrive provides an [easy to user API](https://docs.microsoft.com/en-us/onedrive/developer/rest-api/?view=odsp-graph-online), I built this service.
 
+Most people probably just want to use the [hosted version](https://michaeldick.me/sonos-onedrive/) to add it to your Sonos, but you can also run it yourself.
+
 Issues and pull-requests welcome.
 
 # How do I add OneDrive to my Sonos?
