@@ -4,7 +4,7 @@ After building the [NPR One Service for Sonos](https://github.com/bertique/Sonos
 Issues and pull-requests welcome.
 
 # How do I add OneDrive to my Sonos?
-TBD
+See instructions at [https://michaeldick.me/sonos-onedrive/](https://michaeldick.me/sonos-onedrive/)
 
 # How do I run the service myself?
 
