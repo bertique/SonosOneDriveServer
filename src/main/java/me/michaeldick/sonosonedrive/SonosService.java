@@ -562,11 +562,11 @@ public class SonosService implements SonosSoap {
         	
             for (int i = 0; i < mainResultList.size(); i++) { 
             	Item m = new Item(mainResultList.get(i).getAsJsonObject());
-            	if(m.getType() == Item.FileType.folder
+            	if(m.getType()==Item.FileType.audio || (m.getType()==Item.FileType.file && m.getName().endsWith(".flac"))) {
+            		mcList.add(buildMMD(m));
+            	} else if(m.getType() == Item.FileType.folder
             			|| m.getType() == Item.FileType.file) {
             		mcList.add(buildMC(m));            			
-            	} else if(m.getType()==Item.FileType.audio) {
-            		mcList.add(buildMMD(m));
             	}
 			}
 			ml.setCount(mcList.size());
@@ -585,7 +585,7 @@ public class SonosService implements SonosSoap {
 	private static MediaCollection buildMC(Item m) {	
 		MediaCollection mc = new MediaCollection();
 				
-		if(m.getType().equals(Item.FileType.audio)) {			
+		if(m.getType().equals(Item.FileType.audio) || (m.getType().equals(Item.FileType.file) && m.getName().endsWith(".flac"))) {			
 			mc.setId(SonosService.AUDIO+":"+m.getId());
 			mc.setItemType(ItemType.TRACK);
 			if(m.getTitle() != null && !m.getTitle().isEmpty()) {
@@ -632,8 +632,12 @@ public class SonosService implements SonosSoap {
 		if(m==null)
 			return null;
 		
-		mmd.setId(m.getId());		
-		mmd.setMimeType(m.getMimeType());		
+		mmd.setId(m.getId());
+		if(m.getType().equals(Item.FileType.file) && m.getName().endsWith(".flac")) {
+			mmd.setMimeType("audio/flac");
+		} else {
+			mmd.setMimeType(m.getMimeType());	
+		}
 		mmd.setItemType(ItemType.TRACK);
 		mmd.setDisplayType("audio");
 
