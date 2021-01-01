@@ -118,7 +118,7 @@ public class SonosService implements SonosSoap {
     public static final String NOT_LINKED_RETRY = "Client.NOT_LINKED_RETRY";
     public static final String NOT_LINKED_FAILURE = "Client.NOT_LINKED_FAILURE";
 
-    private static final String AUTH_API_URI_DEFAULT = "https://login.microsoftonline.com/consumers/oauth2/v2.0/"; 
+    private static final String AUTH_API_URI_DEFAULT = "https://login.microsoftonline.com/common/oauth2/v2.0/"; 
     private static final String GRAPH_API_URI_DEFAULT = "https://graph.microsoft.com/v1.0/";
     
     private static String AUTH_API_URI;
