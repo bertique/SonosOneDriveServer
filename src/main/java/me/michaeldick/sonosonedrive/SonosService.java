@@ -523,9 +523,11 @@ public class SonosService implements SonosSoap {
 			Client client = ClientBuilder.newClient();
 			WebTarget target = client
 					.target(GRAPH_API_URI)
-					.path(path)
-					.queryParam("expand", "thumbnails");
+					.path(path);
 					//.queryParam("filter", "audio ne null or folder ne null");
+			if(!path.contains("delta")) {
+				target = target.queryParam("expand", "thumbnails");
+			}
 			if(count > 1) {
 				target = target.queryParam("top", count);
 			}
