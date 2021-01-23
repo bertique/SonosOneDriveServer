@@ -465,9 +465,7 @@ public class SonosService implements SonosSoap {
 			}
 			
 			String json = graphApiGetRequest(path, parameters.getCount(), skipToken, auth);						
-			ml = parseMediaListResponse(auth.getHouseholdId(), json);
-			// Remove 1 since personal vault is not included in response
-			ml.setTotal(ml.getTotal()-1);
+			ml = parseMediaListResponse(auth.getHouseholdId(), json);				
 		} else if(parameters.getId().startsWith(SonosService.FOLDER)) {
 			String path = String.format("/me/drive/items/%s/children", parameters.getId().replaceAll(SonosService.FOLDER+":",""));
 			String skipToken = null;
@@ -572,7 +570,7 @@ public class SonosService implements SonosSoap {
             	}
 			}
 			ml.setCount(mcList.size());
-			if(element.getAsJsonObject().has("@odata.count")) {
+			if(element.getAsJsonObject().has("@odata.count") && element.getAsJsonObject().get("@odata.count").getAsInt() > 100) {
 				ml.setTotal(element.getAsJsonObject().get("@odata.count").getAsInt());
 			} else {
 				ml.setTotal(mcList.size());
