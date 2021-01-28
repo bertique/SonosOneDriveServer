@@ -1,6 +1,7 @@
 package me.michaeldick.sonosonedrive;
 
 import java.io.IOException;
+import java.util.Base64;
 import java.util.List;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -36,7 +37,6 @@ import org.apache.cxf.jaxb.JAXBDataBinding;
 import org.apache.cxf.jaxws.context.WrappedMessageContext;
 import org.apache.cxf.message.Message;
 import org.apache.log4j.Logger;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.w3c.dom.Node;
 
@@ -368,8 +368,11 @@ public class SonosService implements SonosSoap {
         	refresh_token = root.has("refresh_token") ? root.get("refresh_token").getAsString() : null;
             logger.info(householdId.hashCode() +": Got token");
         }
-		    
-        
+
+        if(access_token.length() > 2048) {		
+        	access_token = compressToken(access_token);
+        }
+		               
 		sentMetricsEvent(householdId, "getDeviceAuthToken", null);		        
         
         DeviceAuthTokenResult response = new DeviceAuthTokenResult();
@@ -762,7 +765,24 @@ public class SonosService implements SonosSoap {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Private methods
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////	
-
+	
+	private String compressToken(String token) {
+		logger.info("Access token too long, compressing...");
+		String compressed_token = null;
+		String[] tokenParts = token.split("\\.");			
+		if(tokenParts.length==3) {						
+			byte[] decodedFirstTokenPart = Base64.getDecoder().decode(tokenParts[0]);			
+			byte[] decodedSecondTokenPart = Base64.getDecoder().decode(tokenParts[1]);		
+			compressed_token = String.format("%s###%s###%s", new String(decodedFirstTokenPart), new String(decodedSecondTokenPart), tokenParts[2]);
+			if (compressed_token.length() > 2048) {
+				logger.error("Compressed token too long");
+			}
+		} else {
+			throwSoapFault(NOT_LINKED_FAILURE);		
+		}
+		return compressed_token;
+	}
+	
 	private void sentMetricsEvent(String userId, String eventName, JSONObject properties) {
 		JSONObject sentEvent = messageBuilder.event(userId, eventName, properties);
 	    
@@ -783,7 +803,23 @@ public class SonosService implements SonosSoap {
 			throwSoapFault(SESSION_INVALID);
 		
 		logger.debug("Got userId from header:"+creds.getLoginToken().getHouseholdId());		
-		return new GraphAuth(creds.getLoginToken().getHouseholdId(), creds.getLoginToken().getToken(), creds.getLoginToken().getKey());	
+		String access_token = null;
+		if(creds.getLoginToken().getToken().startsWith("{")
+				&&creds.getLoginToken().getToken().contains("###")) {
+		
+			String[] tokenParts = creds.getLoginToken().getToken().split("###");
+			if(tokenParts.length==3) {						
+				byte[] encodedFirstTokenPart = Base64.getEncoder().encode(tokenParts[0].getBytes());			
+				byte[] encodedSecondTokenPart = Base64.getEncoder().encode(tokenParts[1].getBytes());		
+				access_token = String.format("%s.%s.%s", new String(encodedFirstTokenPart).replace("=", ""), new String(encodedSecondTokenPart).replace("=", ""), tokenParts[2]);
+			} else {
+				throwSoapFault(NOT_LINKED_FAILURE);		
+			}
+		} else {
+			access_token = creds.getLoginToken().getToken();
+		}
+		
+		return new GraphAuth(creds.getLoginToken().getHouseholdId(), access_token, creds.getLoginToken().getKey());	
 	}
 	
 	private GraphAuth refreshToken() {
@@ -828,8 +864,16 @@ public class SonosService implements SonosSoap {
         GraphAuth newAuth = new GraphAuth(); 
         if (element.isJsonObject()) {
         	JsonObject root = element.getAsJsonObject();
-        	newAuth.setDeviceCode(root.get("access_token").getAsString());      
-        	newAuth.setRefreshToken(root.get("refresh_token").getAsString());
+        	
+        	String access_token = root.get("access_token").getAsString();
+        	String refresh_token = root.get("refresh_token").getAsString();
+        	
+        	if(access_token.length() > 2048) {	
+        		access_token = compressToken(access_token);
+            }
+        	        	        
+        	newAuth.setDeviceCode(access_token);      
+        	newAuth.setRefreshToken(refresh_token);
             logger.info(auth.getHouseholdId().hashCode() +": Got refreshed token");
         }
 		           
