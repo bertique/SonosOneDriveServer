@@ -570,8 +570,11 @@ public class SonosService implements SonosSoap {
             	}
 			}
 			ml.setCount(mcList.size());
-			if(element.getAsJsonObject().has("@odata.count") && element.getAsJsonObject().get("@odata.count").getAsInt() > 100) {
+			if(element.getAsJsonObject().has("@odata.count")) {
 				ml.setTotal(element.getAsJsonObject().get("@odata.count").getAsInt());
+				if(ml.getTotal()<100 && ml.getTotal()>mcList.size()) {
+					ml.setTotal(ml.getTotal()-1);
+				}
 			} else {
 				ml.setTotal(mcList.size());
 			}							
