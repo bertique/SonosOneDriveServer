@@ -120,6 +120,8 @@ public class SonosService implements SonosSoap {
 
     private static final String AUTH_API_URI_DEFAULT = "https://login.microsoftonline.com/common/oauth2/v2.0/"; 
     private static final String GRAPH_API_URI_DEFAULT = "https://graph.microsoft.com/v1.0/";
+    private static final String DRIVE_ROOT = "/me/drive/root";
+    private static final String DRIVE_APPFOLDER = "/drive/special/approot";
     
     private static String AUTH_API_URI;
     private static String GRAPH_API_URI;
@@ -250,7 +252,7 @@ public class SonosService implements SonosSoap {
 		
 		sentMetricsEvent(auth.getHouseholdId(), "getLastUpdate", null);
 		
-		String path = "/drive/root/delta";		
+		String path = DRIVE_ROOT+"/delta";		
 		String json = graphApiGetRequest(path, 1, null, auth);						
 		
 		LastUpdate response = new LastUpdate();        		
@@ -275,9 +277,16 @@ public class SonosService implements SonosSoap {
         
 		Form form = new Form();
 		form.param("client_id", GRAPH_CLIENT_ID);						
-		form.param("scope", "user.read "+ 
-				"files.read "+
-				"offline_access");
+				
+		if(isAppFolder()) {
+			form.param("scope", "user.read "+ 
+					"Files.ReadWrite.AppFolder "+
+					"offline_access");
+		} else {
+			form.param("scope", "user.read "+ 
+					"files.read "+
+					"offline_access");
+		}
 				
 		// https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code		
 		String json = "";
@@ -460,7 +469,12 @@ public class SonosService implements SonosSoap {
         MediaList ml = new MediaList();
         
 		if(parameters.getId().equals("root")) {						
-			String path = "/me/drive/root/children";
+			String path = DRIVE_ROOT+"/children";
+			
+			if(isAppFolder()) {
+				path = DRIVE_APPFOLDER+"/children";
+			}
+			
 			String skipToken = null;
 
 			if(parameters.getIndex() > 0) {
@@ -545,6 +559,7 @@ public class SonosService implements SonosSoap {
 			
 		} catch (NotAuthorizedException e) {
 			logger.debug("request NotAuthorized: "+e.getMessage()+", trying to refresh token");		
+			logger.error(e.getResponse().readEntity(String.class));
 			GraphAuth newAuth = refreshToken();
 			throwSoapFault(TOKEN_REFRESH_REQUIRED, newAuth);		
 		} catch (BadRequestException e) {
@@ -832,10 +847,17 @@ public class SonosService implements SonosSoap {
 		Form form = new Form();
 		form.param("client_id", GRAPH_CLIENT_ID);						
 		form.param("refresh_token", auth.getRefreshToken());
-		form.param("grant_type", "refresh_token");
-		form.param("scope", "user.read "+ 
-				"files.read "+
-				"offline_access");
+		form.param("grant_type", "refresh_token");		
+		
+		if(isAppFolder()) {
+			form.param("scope", "user.read "+ 
+					"Files.ReadWrite.AppFolder "+
+					"offline_access");
+		} else {
+			form.param("scope", "user.read "+ 
+					"files.read "+
+					"offline_access");
+		}
 		
 		String json = "";
 		try {
@@ -882,6 +904,14 @@ public class SonosService implements SonosSoap {
         }
 		           
         return newAuth;
+	}
+	
+	private boolean isAppFolder() {
+		if(this.context != null) {
+			return this.context.getMessageContext().get("org.apache.cxf.request.url").toString().contains("soap_appfolder");		
+		} else {
+			return false;
+		}		
 	}
 	
 	private static void throwSoapFault(String faultMessage) {
