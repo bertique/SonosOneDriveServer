@@ -78,36 +78,7 @@
 	</dependencies>
 	<build>
 		<finalName>${project.artifactId}</finalName>
-		<plugins>
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>keytool-maven-plugin</artifactId>
-				<version>1.5</version>
-				<executions>
-					<execution>
-						<phase>generate-resources</phase>
-						<id>clean</id>
-						<goals>
-							<goal>clean</goal>
-						</goals>
-					</execution>
-					<execution>
-						<phase>generate-resources</phase>
-						<id>genkey</id>
-						<goals>
-							<goal>generateKeyPair</goal>
-						</goals>
-					</execution>
-				</executions>
-				<configuration>
-					<keystore>${project.build.directory}/tomcat-ssl.keystore</keystore>
-					<dname>cn=localhost</dname>
-					<keypass>tomcat-learn</keypass>
-					<storepass>tomcat-learn</storepass>
-					<alias>tomcat-learn</alias>
-					<keyalg>RSA</keyalg>
-				</configuration>
-			</plugin>			
+		<plugins>			
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-dependency-plugin</artifactId>
