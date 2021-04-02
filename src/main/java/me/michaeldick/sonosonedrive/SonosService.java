@@ -7,8 +7,6 @@ import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.annotation.Resource;
-import javax.jws.WebService;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.client.Client;
@@ -17,27 +15,17 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Form;
 import javax.ws.rs.core.MediaType;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.namespace.QName;
-import javax.xml.soap.Detail;
-import javax.xml.soap.SOAPConstants;
-import javax.xml.soap.SOAPElement;
-import javax.xml.soap.SOAPFactory;
-import javax.xml.soap.SOAPFault;
 import javax.xml.ws.Holder;
-import javax.xml.ws.WebServiceContext;
-import javax.xml.ws.handler.MessageContext;
-import javax.xml.ws.soap.SOAPFaultException;
 
-import org.apache.cxf.headers.Header;
-import org.apache.cxf.helpers.CastUtils;
-import org.apache.cxf.jaxb.JAXBDataBinding;
-import org.apache.cxf.jaxws.context.WrappedMessageContext;
-import org.apache.cxf.message.Message;
 import org.apache.log4j.Logger;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
+import org.springframework.ws.context.MessageContext;
+import org.springframework.ws.server.endpoint.annotation.Endpoint;
+import org.springframework.ws.server.endpoint.annotation.PayloadRoot;
+import org.springframework.ws.server.endpoint.annotation.ResponsePayload;
+import org.springframework.ws.soap.SoapHeader;
 import org.w3c.dom.Node;
 
 import com.google.gson.JsonArray;
@@ -47,55 +35,58 @@ import com.google.gson.JsonParser;
 import com.mixpanel.mixpanelapi.ClientDelivery;
 import com.mixpanel.mixpanelapi.MessageBuilder;
 import com.mixpanel.mixpanelapi.MixpanelAPI;
-import com.sonos.services._1.AbstractMedia;
-import com.sonos.services._1.AddToContainerResult;
-import com.sonos.services._1.AlbumArtUrl;
-import com.sonos.services._1.AppLinkResult;
-import com.sonos.services._1.ContentKey;
-import com.sonos.services._1.CreateContainerResult;
-import com.sonos.services._1.Credentials;
-import com.sonos.services._1.DeleteContainerResult;
-import com.sonos.services._1.DeviceAuthTokenResult;
-import com.sonos.services._1.DeviceLinkCodeResult;
-import com.sonos.services._1.EncryptionContext;
-import com.sonos.services._1.GetExtendedMetadata;
-import com.sonos.services._1.GetExtendedMetadataResponse;
-import com.sonos.services._1.GetExtendedMetadataText;
-import com.sonos.services._1.GetExtendedMetadataTextResponse;
-import com.sonos.services._1.GetMediaMetadata;
-import com.sonos.services._1.GetMediaMetadataResponse;
-import com.sonos.services._1.GetMetadata;
-import com.sonos.services._1.GetMetadataResponse;
-import com.sonos.services._1.GetSessionId;
-import com.sonos.services._1.GetSessionIdResponse;
-import com.sonos.services._1.HttpHeaders;
-import com.sonos.services._1.ItemType;
-import com.sonos.services._1.LastUpdate;
-import com.sonos.services._1.LoginToken;
-import com.sonos.services._1.MediaCollection;
-import com.sonos.services._1.MediaList;
-import com.sonos.services._1.MediaMetadata;
-import com.sonos.services._1.MediaUriAction;
-import com.sonos.services._1.PositionInformation;
-import com.sonos.services._1.RateItem;
-import com.sonos.services._1.RateItemResponse;
-import com.sonos.services._1.RemoveFromContainerResult;
-import com.sonos.services._1.RenameContainerResult;
-import com.sonos.services._1.ReorderContainerResult;
-import com.sonos.services._1.ReportPlaySecondsResult;
-import com.sonos.services._1.Search;
-import com.sonos.services._1.SearchResponse;
-import com.sonos.services._1.TrackMetadata;
-import com.sonos.services._1.UserInfo;
+import com.sonos.services.AbstractMedia;
+import com.sonos.services.AddToContainerResult;
+import com.sonos.services.AlbumArtUrl;
+import com.sonos.services.AppLinkResult;
+import com.sonos.services.ContentKey;
+import com.sonos.services.CreateContainerResult;
+import com.sonos.services.Credentials;
+import com.sonos.services.DeleteContainerResult;
+import com.sonos.services.DeviceAuthTokenResult;
+import com.sonos.services.DeviceLinkCodeResult;
+import com.sonos.services.EncryptionContext;
+import com.sonos.services.GetExtendedMetadata;
+import com.sonos.services.GetExtendedMetadataResponse;
+import com.sonos.services.GetExtendedMetadataText;
+import com.sonos.services.GetExtendedMetadataTextResponse;
+import com.sonos.services.GetMediaMetadata;
+import com.sonos.services.GetMediaMetadataResponse;
+import com.sonos.services.GetMetadata;
+import com.sonos.services.GetMetadataResponse;
+import com.sonos.services.GetSessionId;
+import com.sonos.services.GetSessionIdResponse;
+import com.sonos.services.HttpHeaders;
+import com.sonos.services.ItemType;
+import com.sonos.services.LastUpdate;
+import com.sonos.services.LoginToken;
+import com.sonos.services.MediaCollection;
+import com.sonos.services.MediaList;
+import com.sonos.services.MediaMetadata;
+import com.sonos.services.MediaUriAction;
+import com.sonos.services.PositionInformation;
+import com.sonos.services.RateItem;
+import com.sonos.services.RateItemResponse;
+import com.sonos.services.RemoveFromContainerResult;
+import com.sonos.services.RenameContainerResult;
+import com.sonos.services.ReorderContainerResult;
+import com.sonos.services.ReportPlaySecondsResult;
+import com.sonos.services.Search;
+import com.sonos.services.SearchResponse;
+import com.sonos.services.TrackMetadata;
+import com.sonos.services.UserInfo;
 import com.sonos.services._1_1.CustomFault;
 import com.sonos.services._1_1.SonosSoap;
 
 import me.michaeldick.sonosonedrive.model.GraphAuth;
 import me.michaeldick.sonosonedrive.model.Item;
 
-@WebService
-public class SonosService implements SonosSoap {
+@Endpoint
+public class SonosService {
 
+	@Autowired
+	MessageSource source;
+	
 	public static String GRAPH_CLIENT_ID = "";		
 	
 	public static String MIXPANEL_PROJECT_TOKEN = "";
@@ -130,14 +121,7 @@ public class SonosService implements SonosSoap {
     // Disable severe log message for SoapFault
     private static java.util.logging.Logger COM_ROOT_LOGGER = java.util.logging.Logger.getLogger("com.sun.xml.internal.messaging.saaj.soap.ver1_1");
     private static Logger logger = Logger.getLogger(SonosService.class.getSimpleName());
-    private static MessageBuilder messageBuilder;
-    
-    @Resource
-	private WebServiceContext context;
-    
-    public WebServiceContext getContext() {
-		return this.context;
-	}
+    private static MessageBuilder messageBuilder;    
     
     public SonosService(Properties conf) {    	
     	AUTH_API_URI = conf.getProperty("AUTH_API_URI", AUTH_API_URI_DEFAULT);
@@ -167,84 +151,41 @@ public class SonosService implements SonosSoap {
     	messageBuilder = new MessageBuilder(MIXPANEL_PROJECT_TOKEN);    	
     }
     
-	@Override
-	public String getScrollIndices(String id) throws CustomFault {
-		logger.debug("getScrollIndices id:"+id);
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @SuppressWarnings("unused")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "getScrollIndices")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "addToContainer")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "getExtendedMetadata")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "reportPlaySeconds")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "reportStatus")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "rateItem")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "reportAccountAction")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "getExtendedMetadataText")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "renameContainer")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "setPlayedSeconds")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "deleteContainer")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "deleteItem")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "refreshAuthToken")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "getUserInfo")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "getAppLink")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "reportPlayStatus")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "createItem")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "getContentKey")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "getSessionId")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "removeFromContainer")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "createContainer")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "reorderContainer")
+    @ResponsePayload
+    public CustomFault defaultResponse(SoapHeader requestHeader, MessageContext messageContext) {
+        logger.warn("Method currently unimplemented: " + messageContext.getRequest().toString());
 
-	@Override
-	public AddToContainerResult addToContainer(String id, String parentId,
-			int index, String updateId) throws CustomFault {
-		logger.debug("addToContainer");
-		// TODO Auto-generated method stub
-		return null;
-	}
+        CustomFault detail = new CustomFault("Method currently unimplemented: " + messageContext.getRequest().toString());        
 
-	@Override
-	public GetExtendedMetadataResponse getExtendedMetadata(
-			GetExtendedMetadata parameters) throws CustomFault {
-		logger.debug("getExtendedMetadata id:"+parameters.getId());
-
-
-		return null;		
-	}
-
-	@Override
-	public ReportPlaySecondsResult reportPlaySeconds(String id, int seconds, String contextId, String privateData,
-			Integer offsetMillis) throws CustomFault {
-		logger.debug("reportPlaySeconds id:"+id+" seconds:"+seconds);
-		
-		return null;
-	}
-
-	@Override
-	public void reportStatus(String id, int errorCode, String message)
-			throws CustomFault {
-		logger.debug("reportStatus");
-		// TODO Auto-generated method stub		
-	}
-
-	@Override
-	public RateItemResponse rateItem(RateItem parameters) throws CustomFault {
-		logger.debug("rateItem id:"+parameters.getId()+" rating:"+parameters.getRating());
-
-		
-		return null;
-	}
-
-	@Override
-	public void reportAccountAction(String type) throws CustomFault {
-		logger.debug("reportAccountAction");
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public GetExtendedMetadataTextResponse getExtendedMetadataText(
-			GetExtendedMetadataText parameters) throws CustomFault {
-		logger.debug("getExtendedMetadataText id:"+parameters.getId());
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public RenameContainerResult renameContainer(String id, String title)
-			throws CustomFault {
-		logger.debug("renameContainer");
-		// TODO Auto-generated method stub
-		
-		return null;
-	}
-
-	@Override
-	public void setPlayedSeconds(String id, int seconds, String contextId, String privateData, Integer offsetMillis)
-			throws CustomFault {
-		logger.debug("setPlayedSeconds id:"+id+" sec:"+seconds);		
-	}
-
-	@Override
+        return detail;
+    }
+  
+    @SuppressWarnings("unused")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "getLastUpdate")
+    @ResponsePayload
 	public LastUpdate getLastUpdate() throws CustomFault {
 		logger.debug("getLastUpdate");
 	
@@ -268,7 +209,9 @@ public class SonosService implements SonosSoap {
 		return response;
 	}
 	
-	@Override
+    @SuppressWarnings("unused")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "getDeviceLinkCode")
+    @ResponsePayload
 	public DeviceLinkCodeResult getDeviceLinkCode(String householdId)
 			throws CustomFault {	
 		logger.debug("getDeviceLinkCode");
@@ -327,14 +270,9 @@ public class SonosService implements SonosSoap {
 		return response;
 	}
 
-	@Override
-	public void deleteItem(String favorite) throws CustomFault {
-		logger.debug("deleteItem");
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
+    @SuppressWarnings("unused")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "getDeviceAuthToken")
+    @ResponsePayload
 	public DeviceAuthTokenResult getDeviceAuthToken(String householdId, String linkCode, String linkDeviceId,
 			String callbackPath) throws CustomFault {
 		logger.debug("getDeviceAuthToken");
@@ -390,23 +328,9 @@ public class SonosService implements SonosSoap {
 		return response;
 	}
 
-	@Override
-	public CreateContainerResult createContainer(String containerType,
-			String title, String parentId, String seedId) throws CustomFault {
-		logger.debug("createContainer");
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public ReorderContainerResult reorderContainer(String id, String from,
-			int to, String updateId) throws CustomFault {
-		logger.debug("reorderContainer");
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
+    @SuppressWarnings("unused")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "getMediaURI")
+    @ResponsePayload
 	public void getMediaURI(String id, MediaUriAction action, Integer secondsSinceExplicit,
 			Holder<String> deviceSessionToken, Holder<String> getMediaURIResult,
 			Holder<EncryptionContext> deviceSessionKey, Holder<EncryptionContext> contentKey,
@@ -425,7 +349,9 @@ public class SonosService implements SonosSoap {
 		getMediaURIResult.value = m.getFileUri();	
 	}
 
-	@Override
+    @SuppressWarnings("unused")
+    @PayloadRoot(namespace = MusicServiceConfig.SONOS_SOAP_NAMESPACE, localPart = "getMediaMetadata")
+    @ResponsePayload
 	public GetMediaMetadataResponse getMediaMetadata(GetMediaMetadata parameters)
 			throws CustomFault {
 		logger.debug("getMediaMetadata id:"+parameters.getId());
@@ -443,7 +369,8 @@ public class SonosService implements SonosSoap {
 		return response;
 	}
 
-	@Override
+	@SuppressWarnings("unused")
+    @ResponsePayload
 	public GetMetadataResponse getMetadata(GetMetadata parameters)
 			throws CustomFault {
 		logger.debug("getMetadata id:"+parameters.getId()+" count:"+parameters.getCount()+" index:"+parameters.getIndex());
@@ -692,51 +619,7 @@ public class SonosService implements SonosSoap {
 		mmd.setTrackMetadata(tmd);		
 		return mmd;
 	}	
-	
-	@Override
-	public GetSessionIdResponse getSessionId(GetSessionId parameters)
-			throws CustomFault {
-		logger.error("getSessionId (deprecated)");
-		
-		return null;
-	}
 
-	@Override
-	public ContentKey getContentKey(String id, String uri, String deviceSessionToken) throws CustomFault {
-		logger.debug("getContentKey");
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public RemoveFromContainerResult removeFromContainer(String id,
-			String indices, String updateId) throws CustomFault {
-		logger.debug("removeFromContainer");
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public DeleteContainerResult deleteContainer(String id) throws CustomFault {
-		logger.debug("deleteContainer");
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void reportPlayStatus(String id, String status, String contextId, Integer offsetMillis) throws CustomFault {		
-		logger.debug("reportPlayStatus");
-		
-	}
-
-	@Override
-	public String createItem(String favorite) throws CustomFault {
-		logger.debug("createItem favorite:"+favorite);
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
 	public SearchResponse search(Search parameters) throws CustomFault {
 		logger.debug("search");
 		
@@ -758,27 +641,6 @@ public class SonosService implements SonosSoap {
 		ml.setIndex(parameters.getIndex());
 		response.setSearchResult(ml);	
 		return response;
-	}
-
-	@Override
-	public AppLinkResult getAppLink(String householdId, String hardware, String osVersion, String sonosAppName,
-			String callbackPath) throws CustomFault {
-		logger.debug("getAppLink");
-		return null;
-	}
-	
-	@Override
-	public UserInfo getUserInfo() throws CustomFault {
-		logger.debug("getUserInfo");
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	@Override
-	public DeviceAuthTokenResult refreshAuthToken() throws CustomFault {
-		logger.debug("refreshAuthToken");
-
-		return null;			
 	}
 	
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -13,9 +13,9 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.sonos.services._1.DeviceAuthTokenResult;
-import com.sonos.services._1.DeviceLinkCodeResult;
-import com.sonos.services._1.LastUpdate;
+import com.sonos.services.DeviceAuthTokenResult;
+import com.sonos.services.DeviceLinkCodeResult;
+import com.sonos.services.LastUpdate;
 import com.sonos.services._1_1.CustomFault;
 
 import me.michaeldick.sonosonedrive.SonosService;
