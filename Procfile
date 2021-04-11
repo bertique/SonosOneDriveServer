@@ -1,1 +1,1 @@
-web:    java $JAVA_OPTS -jar target/SonosOneDriveServer-war-exec.jar -httpPort=$PORT
+web:    java $JAVA_OPTS -jar target/dependency/webapp-runner.jar --port $PORT  target/*.war
