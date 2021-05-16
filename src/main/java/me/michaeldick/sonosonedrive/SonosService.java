@@ -660,7 +660,10 @@ public class SonosService implements SonosSoap {
 		mmd.setId(m.getId());
 		if(m.getType().equals(Item.FileType.file) && m.getName().endsWith(".flac")) {
 			mmd.setMimeType("audio/flac");
-		} else {
+		} else if (m.getMimeType().endsWith("wma")) {
+			mmd.setMimeType("audio/wma");
+		}
+		else {
 			mmd.setMimeType(m.getMimeType());	
 		}
 		mmd.setItemType(ItemType.TRACK);
