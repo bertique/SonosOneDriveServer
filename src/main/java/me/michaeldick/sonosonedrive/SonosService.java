@@ -421,7 +421,7 @@ public class SonosService implements SonosSoap {
 		JsonElement element = JsonParser.parseString(json);
 		
 		Item m = new Item(element.getAsJsonObject());
-            	
+
 		getMediaURIResult.value = m.getFileUri();	
 	}
 
@@ -899,11 +899,12 @@ public class SonosService implements SonosSoap {
         	
         	if(access_token.length() > 2048) {	
         		access_token = compressToken(access_token);
+        		logger.info("Token compressed from "+access_token.length());
             }
         	        	        
         	newAuth.setDeviceCode(access_token);      
         	newAuth.setRefreshToken(refresh_token);
-            logger.info(auth.getHouseholdId().hashCode() +": Got refreshed token");
+            logger.info(auth.getHouseholdId().hashCode() +": Got refreshed token "+access_token.length()+" "+refresh_token.length());
         }
 		           
         return newAuth;
