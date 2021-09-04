@@ -565,6 +565,14 @@ public class SonosService implements SonosSoap {
 		} catch (BadRequestException e) {
 			logger.error("Bad request: "+e.getMessage());
 			logger.error(e.getResponse().readEntity(String.class));
+			JsonParser parser = new JsonParser();
+	        JsonElement element = parser.parse(e.getResponse().readEntity(String.class));
+	        if(element.isJsonObject()) {
+	        	JsonObject o = element.getAsJsonObject();
+	        	if(o.has("error") && o.get("error").getAsString().equals("invalid_grant")) {
+	        		throwSoapFault(AUTH_TOKEN_EXPIRED);
+	        	}
+	        }
 		}		
 		return json;
 	}
