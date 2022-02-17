@@ -18,8 +18,6 @@ import com.sonos.services._1.DeviceLinkCodeResult;
 import com.sonos.services._1.LastUpdate;
 import com.sonos.services._1_1.CustomFault;
 
-import me.michaeldick.sonosonedrive.SonosService;
-
 public class SonosServiceTest {
 
 	private static final String PROPERTIES_FILENAME = "debug.properties";
