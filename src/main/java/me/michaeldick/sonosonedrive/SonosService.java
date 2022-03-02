@@ -17,6 +17,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Form;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
@@ -299,11 +300,15 @@ public class SonosService implements SonosSoap {
 		} catch (NotAuthorizedException e) {			
 			logger.info(householdId.hashCode() +": login NotAuthorized, sending LOGIN_INVALID");
 			logger.debug(householdId.hashCode() +": "+e.getMessage());
-			logger.error(e.getResponse().readEntity(String.class));
+			try (Response r = e.getResponse()) {
+				logger.error(r.readEntity(String.class));
+			}			
 			throwSoapFault(LOGIN_INVALID);
 		} catch (BadRequestException e) {
 			logger.error("Bad request: "+e.getMessage());
-			logger.error(e.getResponse().readEntity(String.class));
+			try (Response r = e.getResponse()) {
+				logger.error(r.readEntity(String.class));
+			}
 			throwSoapFault(SERVICE_UNKNOWN_ERROR);
 		}
 		
@@ -354,17 +359,22 @@ public class SonosService implements SonosSoap {
 		} catch (NotAuthorizedException e) {
 			logger.info(householdId.hashCode() +": Not linked retry");
 			logger.debug(householdId.hashCode() +": "+e.getMessage());
-			logger.debug(householdId.hashCode() +": Detailed response: "+e.getResponse().readEntity(String.class));
+			try (Response r = e.getResponse()) {
+				logger.debug(householdId.hashCode() +": Detailed response: "+r.readEntity(String.class));
+			}
 			throwSoapFault(NOT_LINKED_RETRY, "NOT_LINKED_RETRY", "5");
 		} catch (BadRequestException e) {
-			JsonObject element = JsonParser.parseString(e.getResponse().readEntity(String.class)).getAsJsonObject();			
+			try (Response r = e.getResponse()) {							
+				JsonObject element = JsonParser.parseString(r.readEntity(String.class)).getAsJsonObject();			
+				
+			    if(element.get("error").getAsString().equals("authorization_pending")) {
+					logger.info(householdId.hashCode() +": Not linked retry");				
+					throwSoapFault(NOT_LINKED_RETRY, "NOT_LINKED_RETRY", "5");
+			    }
+				logger.error("Bad request: "+e.getMessage());
 			
-		    if(element.get("error").getAsString().equals("authorization_pending")) {
-				logger.info(householdId.hashCode() +": Not linked retry");				
-				throwSoapFault(NOT_LINKED_RETRY, "NOT_LINKED_RETRY", "5");
-		    }
-			logger.error("Bad request: "+e.getMessage());
-			logger.error(e.getResponse().readEntity(String.class));
+				logger.error(r.readEntity(String.class));
+			}
 			throwSoapFault(NOT_LINKED_FAILURE, "NOT_LINKED_FAILURE", "6");
 		}
 		
@@ -559,20 +569,25 @@ public class SonosService implements SonosSoap {
 			
 		} catch (NotAuthorizedException e) {
 			logger.debug("request NotAuthorized: "+e.getMessage()+", trying to refresh token");		
-			logger.error(e.getResponse().readEntity(String.class));
+			try (Response r = e.getResponse()) {
+				logger.error(r.readEntity(String.class));
+			}
 			GraphAuth newAuth = refreshToken();
 			throwSoapFault(TOKEN_REFRESH_REQUIRED, newAuth);		
 		} catch (BadRequestException e) {
 			logger.error("Bad request: "+e.getMessage());
-			logger.error(e.getResponse().readEntity(String.class));
-			JsonParser parser = new JsonParser();
-	        JsonElement element = parser.parse(e.getResponse().readEntity(String.class));
-	        if(element.isJsonObject()) {
-	        	JsonObject o = element.getAsJsonObject();
-	        	if(o.has("error") && o.get("error").getAsString().equals("invalid_grant")) {
-	        		throwSoapFault(AUTH_TOKEN_EXPIRED);
-	        	}
-	        }
+			try (Response r = e.getResponse()) {
+				logger.error(r.readEntity(String.class));
+			
+		        JsonElement element = JsonParser.parseString(r.readEntity(String.class));
+		        if(element.isJsonObject()) {
+		        	JsonObject o = element.getAsJsonObject();
+		        	if(o.has("error") && o.get("error").getAsString().equals("invalid_grant")) {
+		        		logger.info("Throwing expired token during API refresh");
+		        		throwSoapFault(AUTH_TOKEN_EXPIRED);
+		        	}
+		        }
+			}
 		}		
 		return json;
 	}
@@ -880,24 +895,27 @@ public class SonosService implements SonosSoap {
 		} catch (NotAuthorizedException e) {
 			logger.info(auth.getHouseholdId().hashCode() +": Not linked retry");
 			logger.debug(auth.getHouseholdId().hashCode() +": "+e.getMessage());
-			logger.debug(auth.getHouseholdId().hashCode() +": Detailed response: "+e.getResponse().readEntity(String.class));
+			try (Response r = e.getResponse()) {
+				logger.debug(auth.getHouseholdId().hashCode() +": Detailed response: "+r.readEntity(String.class));
+			}
 			throwSoapFault(AUTH_TOKEN_EXPIRED);
 		} catch (BadRequestException e) {
 			logger.error("Bad request: "+e.getMessage());
-			logger.debug(auth.getHouseholdId().hashCode() +": Detailed response: "+e.getResponse().readEntity(String.class));
-			JsonParser parser = new JsonParser();
-	        JsonElement element = parser.parse(e.getResponse().readEntity(String.class));
-	        if(element.isJsonObject()) {
-	        	JsonObject o = element.getAsJsonObject();
-	        	if(o.has("error") && o.get("error").getAsString().equals("invalid_grant")) {
-	        		throwSoapFault(AUTH_TOKEN_EXPIRED);
-	        	}
-	        }
+			try (Response r = e.getResponse()) {
+				logger.debug(auth.getHouseholdId().hashCode() +": Detailed response: "+r.readEntity(String.class));			
+		        JsonElement element = JsonParser.parseString(r.readEntity(String.class));
+		        if(element.isJsonObject()) {
+		        	JsonObject o = element.getAsJsonObject();
+		        	if(o.has("error") && o.get("error").getAsString().equals("invalid_grant")) {
+		        		logger.info("Throwing expired token during refresh");
+		        		throwSoapFault(AUTH_TOKEN_EXPIRED);
+		        	}
+		        }
+			}
 			throwSoapFault(SERVICE_UNKNOWN_ERROR);
 		}
-		
-		JsonParser parser = new JsonParser();
-        JsonElement element = parser.parse(json);
+				
+        JsonElement element = JsonParser.parseString(json);
         GraphAuth newAuth = new GraphAuth(); 
         if (element.isJsonObject()) {
         	JsonObject root = element.getAsJsonObject();
