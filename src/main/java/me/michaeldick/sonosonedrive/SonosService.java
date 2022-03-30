@@ -603,7 +603,9 @@ public class SonosService implements SonosSoap {
         	
             for (int i = 0; i < mainResultList.size(); i++) { 
             	Item m = new Item(mainResultList.get(i).getAsJsonObject());
-            	if(m.getType()==Item.FileType.audio 
+            	if(m.getType()==null) { 
+            		logger.debug("Ignoring item with null type (e.g. .url files): "+m.getName());
+            	} else if(m.getType()==Item.FileType.audio 
             			|| (m.getType()==Item.FileType.file && m.getName().endsWith(".flac"))
             			|| (m.getType().equals(Item.FileType.file) && m.getMimeType().contains("audio"))) {
             		mcList.add(buildMMD(m));
