@@ -124,6 +124,8 @@ public class SonosService implements SonosSoap {
     private static final String DRIVE_ROOT = "/me/drive/root";
     private static final String DRIVE_APPFOLDER = "/drive/special/approot";
     
+    private static final int CAN_PLAY_COUNT = 100;
+    
     private static String AUTH_API_URI;
     private static String GRAPH_API_URI;
     private static boolean isDebug = false;
@@ -665,7 +667,7 @@ public class SonosService implements SonosSoap {
 			mc.setId(SonosService.FOLDER+":"+m.getId());
 			mc.setItemType(ItemType.COLLECTION);
 			mc.setTitle(m.getName());
-			if(m.getChildCount() < 40) {
+			if(m.getChildCount() < CAN_PLAY_COUNT) {
 				mc.setCanPlay(true);
 			} else {
 				mc.setCanPlay(false);
