@@ -1,13 +1,13 @@
 steps:
- - name: maven:3-jdk-8
-   entrypoint: mvn
-   args: ['--version']
- - name: maven:3-jdk-8
-   entrypoint: mvn
-   args: ['test']
- - name: maven:3-jdk-8
-   entrypoint: mvn
-   args: ['package','-Dmaven.test.skip=true']
- - name: gcr.io/cloud-builders/docker
-   args: ['build', '-t', 'gcr.io/sonosonedrive-on-gcp/main-image', '--build-arg=JAR_FILE=target/*.war', '.']
- images: ['gcr.io/sonosonedrive-on-gcp/main-image']
+- name: maven:3-jdk-8
+  entrypoint: mvn
+  args: ['--version']
+- name: maven:3-jdk-8
+  entrypoint: mvn
+  args: ['test']
+- name: maven:3-jdk-8
+  entrypoint: mvn
+  args: ['package','-Dmaven.test.skip=true']
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '-t', 'gcr.io/sonosonedrive-on-gcp/main-image', '--build-arg=JAR_FILE=target/*.war', '.']
+images: ['gcr.io/sonosonedrive-on-gcp/main-image']
