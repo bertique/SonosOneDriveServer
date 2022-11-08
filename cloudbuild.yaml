@@ -9,5 +9,5 @@ steps:
   entrypoint: mvn
   args: ['package','-Dmaven.test.skip=true']
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/sonosonedrive-on-gcp/main-image', '--build-arg=JAR_FILE=target/*.war', '.']
+  args: ['build', '-t', 'gcr.io/sonosonedrive-on-gcp/main-image', '--build-arg=JAR_FILE=target/SonosOneDriveServer.war', '.']
 images: ['gcr.io/sonosonedrive-on-gcp/main-image']
