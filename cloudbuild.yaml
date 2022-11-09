@@ -10,7 +10,7 @@ steps:
   args: ['package','-Dmaven.test.skip=true']
 - name: maven:3-jdk-8
   entrypoint: mvn
-  args: ['appengine:deploy','-Dapp.deploy.projectId=sonosonedrive-on-gcp','-Dapp.deploy.version=VERSION_ID','-Dapp.deploy.promote=False']
+  args: ['appengine:deploy','-Dapp.deploy.projectId=sonosonedrive-on-gcp','-Dapp.deploy.version=GCLOUD_CONFIG','-Dapp.deploy.promote=False']
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/sonosonedrive-on-gcp/main-image', '--build-arg=JAR_FILE=target/SonosOneDriveServer.war', '.']
 images: ['gcr.io/sonosonedrive-on-gcp/main-image']
