@@ -10,4 +10,4 @@ steps:
   args: ['package','-Dmaven.test.skip=true']
 - name: maven:3-jdk-8
   entrypoint: mvn
-  args: ['appengine:deploy','-Dapp.deploy.projectId=sonosonedrive-on-gcp','-Dapp.deploy.version=GCLOUD_CONFIG','-Dapp.deploy.promote=False']
+  args: ['appengine:deploy','-Dapp.deploy.projectId=sonosonedrive-on-gcp','-Dapp.deploy.version=GCLOUD_CONFIG','-Dapp.deploy.promote=true']
