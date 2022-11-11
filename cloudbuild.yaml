@@ -8,6 +8,6 @@ steps:
 - name: maven:3.8.3-openjdk-17
   entrypoint: mvn
   args: ['package','-Dmaven.test.skip=true']
-- name: maven:3-jdk-8
+- name: maven:3.8.3-openjdk-17
   entrypoint: mvn
   args: ['appengine:deploy','-Dapp.deploy.projectId=sonosonedrive-on-gcp','-Dapp.deploy.version=GCLOUD_CONFIG','-Dapp.deploy.promote=true']
