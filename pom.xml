@@ -72,7 +72,11 @@
 			<artifactId>mixpanel-java</artifactId>
 			<version>1.5.0</version>
 		</dependency>
-
+		<dependency>
+			<groupId>com.google.appengine</groupId>
+			<artifactId>appengine-api-1.0-sdk</artifactId>
+			<version>2.0.4</version> <!-- or later-->
+		</dependency>
 	</dependencies>
 	<build>
 		<finalName>${project.artifactId}</finalName>

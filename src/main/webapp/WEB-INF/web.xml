@@ -34,5 +34,5 @@
 		<servlet-name>CXFServlet</servlet-name>
 		<url-pattern>/soap_appfolder/*</url-pattern>
 	</servlet-mapping>
-
+	<app-engine-apis>true</app-engine-apis>
 </web-app>
