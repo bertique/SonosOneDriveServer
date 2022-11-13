@@ -37,8 +37,9 @@ import org.apache.cxf.helpers.CastUtils;
 import org.apache.cxf.jaxb.JAXBDataBinding;
 import org.apache.cxf.jaxws.context.WrappedMessageContext;
 import org.apache.cxf.message.Message;
-import org.apache.log4j.Logger;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 
 import com.google.gson.JsonArray;
@@ -131,7 +132,7 @@ public class SonosService implements SonosSoap {
         
     // Disable severe log message for SoapFault
     private static java.util.logging.Logger COM_ROOT_LOGGER = java.util.logging.Logger.getLogger("com.sun.xml.internal.messaging.saaj.soap.ver1_1");
-    private static Logger logger = Logger.getLogger(SonosService.class.getSimpleName());
+    private static Logger logger = LoggerFactory.getLogger(SonosService.class);
     private static MessageBuilder messageBuilder;
     
     @Resource
@@ -152,6 +153,8 @@ public class SonosService implements SonosSoap {
     	initializeMetrics();
     	
     	COM_ROOT_LOGGER.setLevel(java.util.logging.Level.OFF);
+    	
+    	logger.info("Initialized SonosService");
     }
     
     public SonosService () {
@@ -163,6 +166,8 @@ public class SonosService implements SonosSoap {
     	initializeMetrics();
     	
     	COM_ROOT_LOGGER.setLevel(java.util.logging.Level.OFF);
+    	
+    	logger.info("Initialized SonosService");
     }   
     
     public void initializeMetrics() {    	    	
