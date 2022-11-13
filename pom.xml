@@ -92,6 +92,11 @@
 			<artifactId>appengine-api-1.0-sdk</artifactId>
 			<version>2.0.4</version> <!-- or later-->
 		</dependency>
+		<dependency>
+			<groupId>com.google.cloud</groupId>
+			<artifactId>google-cloud-logging-logback</artifactId>
+			<version>0.129.1-alpha</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<finalName>${project.artifactId}</finalName>

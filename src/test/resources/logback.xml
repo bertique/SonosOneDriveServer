@@ -22,9 +22,20 @@
 		</encoder>
 	</appender>
 
+	<appender name="CLOUD"
+		class="com.google.cloud.logging.logback.LoggingAppender">
+		<log>application.log</log> <!-- Optional : default java.log -->
+		<resourceType>gae_app</resourceType> <!-- Optional : default: auto-detected, fallback: global -->
+		<enhancer>com.example.logging.logback.enhancers.ExampleEnhancer
+		</enhancer> <!-- Optional -->
+		<flushLevel>WARN</flushLevel> <!-- Optional : default ERROR -->
+	</appender>
+
 	<root level="DEBUG">
 		<appender-ref ref="STDOUT" />
 		<appender-ref ref="FILE" />
+		<appender-ref ref="CLOUD" />
+
 	</root>
 	<logger name="org" level="INFO" />
 	<logger name="org.apache.cxf.phase.PhaseInterceptorChain"
