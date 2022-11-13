@@ -91,8 +91,7 @@ import com.sonos.services._1.UserInfo;
 import com.sonos.services._1_1.CustomFault;
 import com.sonos.services._1_1.SonosSoap;
 
-import me.michaeldick.sonosonedrive.model.GraphAuth;
-import me.michaeldick.sonosonedrive.model.Item;
+import me.michaeldick.sonosonedrive.model.*;
 
 @WebService
 public class SonosService implements SonosSoap {
