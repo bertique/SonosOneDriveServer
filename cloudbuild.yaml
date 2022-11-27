@@ -26,4 +26,4 @@ availableSecrets:
   - versionName: projects/$PROJECT_ID/secrets/SONOSONEDRIVE_GRAPH_CLIENT_ID/versions/latest
     env: 'GRAPH_CLIENT_ID_VAR'
   - versionName: projects/$PROJECT_ID/secrets/SONOSONEDRIVE_MIXPANEL_PROJECT_TOKEN/versions/latest
-    env: 'MIXPANEL_PROJECT_TOKEN_VAR'  
+    env: 'MIXPANEL_PROJECT_TOKEN_VAR'
