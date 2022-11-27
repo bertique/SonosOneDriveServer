@@ -11,9 +11,9 @@ steps:
 - name: maven:3-jdk-8
   entrypoint: mvn
   args: ['appengine:deploy','-Dapp.deploy.projectId=sonosonedrive-on-gcp','-Dapp.deploy.version=GCLOUD_CONFIG','-Dapp.deploy.promote=true']
-  availableSecrets:
-secretManager:
-- versionName: projects/$PROJECT_ID/secrets/SONOSONEDRIVE_GRAPH_CLIENT_ID/versions/latest
-  env: 'GRAPH_CLIENT_ID_VAR'
-- versionName: projects/$PROJECT_ID/secrets/SONOSONEDRIVE_MIXPANEL_PROJECT_TOKEN/versions/latest
-  env: 'MIXPANEL_PROJECT_TOKEN_VAR'  
+availableSecrets:
+  secretManager:
+  - versionName: projects/$PROJECT_ID/secrets/SONOSONEDRIVE_GRAPH_CLIENT_ID/versions/latest
+    env: 'GRAPH_CLIENT_ID_VAR'
+  - versionName: projects/$PROJECT_ID/secrets/SONOSONEDRIVE_MIXPANEL_PROJECT_TOKEN/versions/latest
+    env: 'MIXPANEL_PROJECT_TOKEN_VAR'  
