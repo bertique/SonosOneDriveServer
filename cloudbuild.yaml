@@ -11,9 +11,9 @@ steps:
       - -c
       - |
         echo 'my api key from secret manager is '$$GRAPH_CLIENT_ID_VAR' and'$$MIXPANEL_PROJECT_TOKEN_VAR
-        sed -i "s|GRAPH_CLIENT_ID_VAR|$$GRAPH_CLIENT_ID_VAR|g" app.yaml
-        sed -i "s|MIXPANEL_PROJECT_TOKEN_VAR|$$MIXPANEL_PROJECT_TOKEN_VAR|g" app.yaml
-        cat app.yaml # you can now see the secret value inserted as the env variable
+        sed -i "s|GRAPH_CLIENT_ID_VAR|$$GRAPH_CLIENT_ID_VAR|g" src/main/appengine/app.yaml
+        sed -i "s|MIXPANEL_PROJECT_TOKEN_VAR|$$MIXPANEL_PROJECT_TOKEN_VAR|g" src/main/appengine/app.yaml
+        cat src/main/appengine/app.yaml # you can now see the secret value inserted as the env variable
   secretEnv: ['GRAPH_CLIENT_ID_VAR','MIXPANEL_PROJECT_TOKEN_VAR']
 - name: maven:3.8.3-openjdk-17
   entrypoint: mvn
