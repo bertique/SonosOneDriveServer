@@ -155,6 +155,8 @@ public class SonosService implements SonosSoap {
     	COM_ROOT_LOGGER.setLevel(java.util.logging.Level.OFF);
     	
     	logger.info("Initialized SonosService");
+    	logger.info("GRAPH_CLIENT_ID " + GRAPH_CLIENT_ID.substring(GRAPH_CLIENT_ID.length() - 1));
+    	logger.info("MIXPANEL_PROJECT_TOKEN " + MIXPANEL_PROJECT_TOKEN.substring(MIXPANEL_PROJECT_TOKEN.length() - 1));
     }
     
     public SonosService () {
@@ -168,6 +170,8 @@ public class SonosService implements SonosSoap {
     	COM_ROOT_LOGGER.setLevel(java.util.logging.Level.OFF);
     	
     	logger.info("Initialized SonosService");
+    	logger.info("GRAPH_CLIENT_ID " + GRAPH_CLIENT_ID.substring(GRAPH_CLIENT_ID.length() - 1));
+    	logger.info("MIXPANEL_PROJECT_TOKEN " + MIXPANEL_PROJECT_TOKEN.substring(MIXPANEL_PROJECT_TOKEN.length() - 1));
     }   
     
     public void initializeMetrics() {    	    	
