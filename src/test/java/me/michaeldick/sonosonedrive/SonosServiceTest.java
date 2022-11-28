@@ -59,7 +59,7 @@ public class SonosServiceTest {
 	
 	@Test
 	public void testSonosService() {		
-		new SonosService();
+		new SonosService(properties);
 	}
 
 	@Ignore
