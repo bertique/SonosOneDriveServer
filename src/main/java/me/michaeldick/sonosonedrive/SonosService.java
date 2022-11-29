@@ -155,8 +155,10 @@ public class SonosService implements SonosSoap {
     	COM_ROOT_LOGGER.setLevel(java.util.logging.Level.OFF);
     	
     	logger.info("Initialized SonosService");
-    	logger.info("GRAPH_CLIENT_ID " + GRAPH_CLIENT_ID.substring(GRAPH_CLIENT_ID.length() - 5));
-    	logger.info("MIXPANEL_PROJECT_TOKEN " + MIXPANEL_PROJECT_TOKEN.substring(MIXPANEL_PROJECT_TOKEN.length() - 5));
+    	logger.info("GRAPH_CLIENT_ID " + GRAPH_CLIENT_ID);
+    	logger.info("MIXPANEL_PROJECT_TOKEN " + MIXPANEL_PROJECT_TOKEN);
+    	logger.info("GAE_APPLICATION "+System.getenv("GAE_APPLICATION"));
+    	logger.info("FOO_BAR_ID "+System.getenv("FOO_BAR_ID"));
     }
     
     public SonosService () {
@@ -170,8 +172,10 @@ public class SonosService implements SonosSoap {
     	COM_ROOT_LOGGER.setLevel(java.util.logging.Level.OFF);
     	
     	logger.info("Initialized SonosService");
-    	logger.info("GRAPH_CLIENT_ID " + GRAPH_CLIENT_ID.substring(GRAPH_CLIENT_ID.length() - 5));
-    	logger.info("MIXPANEL_PROJECT_TOKEN " + MIXPANEL_PROJECT_TOKEN.substring(MIXPANEL_PROJECT_TOKEN.length() - 5));
+    	logger.info("GRAPH_CLIENT_ID " + GRAPH_CLIENT_ID);
+    	logger.info("MIXPANEL_PROJECT_TOKEN " + MIXPANEL_PROJECT_TOKEN);
+    	logger.info("GAE_APPLICATION "+System.getenv("GAE_APPLICATION"));
+    	logger.info("FOO_BAR_ID "+System.getenv("FOO_BAR_ID"));
     }   
     
     public void initializeMetrics() {    	    	
