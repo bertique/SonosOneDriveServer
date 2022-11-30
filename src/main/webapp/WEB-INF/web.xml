@@ -5,7 +5,6 @@
     "http://java.sun.com/dtd/web-app_2_3.dtd">
 
 <web-app>
-
 	<context-param>
 		<param-name>contextConfigLocation</param-name>
 		<param-value>WEB-INF/beans.xml</param-value>
@@ -33,5 +32,5 @@
 	<servlet-mapping>
 		<servlet-name>CXFServlet</servlet-name>
 		<url-pattern>/soap_appfolder/*</url-pattern>
-	</servlet-mapping>	
+	</servlet-mapping>
 </web-app>
