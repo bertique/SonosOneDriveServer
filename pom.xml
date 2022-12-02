@@ -8,7 +8,7 @@
 	<url>http://michaeldick.me</url>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<cxfVersion>3.5.3</cxfVersion>
+		<cxfVersion>3.5.4</cxfVersion>
 		<logbackVersion>1.4.4</logbackVersion>
 	</properties>
 	<repositories>
@@ -24,7 +24,7 @@
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-webmvc</artifactId>
-			<version>5.3.22</version>
+			<version>5.3.24</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.cxf</groupId>
@@ -79,17 +79,17 @@
 		<dependency>
 			<groupId>com.mixpanel</groupId>
 			<artifactId>mixpanel-java</artifactId>
-			<version>1.5.0</version>
+			<version>1.5.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.appengine</groupId>
 			<artifactId>appengine-api-1.0-sdk</artifactId>
-			<version>2.0.4</version>
+			<version>2.0.10</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.cloud</groupId>
 			<artifactId>google-cloud-logging-logback</artifactId>
-			<version>0.129.1-alpha</version>
+			<version>0.129.3-alpha</version>
 		</dependency>
 	</dependencies>
 	<build>
