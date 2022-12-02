@@ -77,12 +77,6 @@
 			<version>${logbackVersion}</version>
 		</dependency>
 		<dependency>
-			<groupId>javax.servlet</groupId>
-			<artifactId>javax.servlet-api</artifactId>
-			<version>4.0.0</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
 			<groupId>com.mixpanel</groupId>
 			<artifactId>mixpanel-java</artifactId>
 			<version>1.5.0</version>
