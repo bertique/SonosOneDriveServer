@@ -11,8 +11,9 @@
         <import resource="classpath:META-INF/cxf/cxf.xml" />
 
 		<mvc:default-servlet-handler />
+		<mvc:resources mapping="/.well-known/**" location="/well-known/"/>
 		<mvc:resources mapping="/static/**" location="/static/"/>
-		   
+			    
         <jaxws:endpoint 
           id="SonosService" 
           implementor="me.michaeldick.sonosonedrive.SonosService" 
