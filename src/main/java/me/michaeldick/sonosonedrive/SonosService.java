@@ -837,6 +837,12 @@ public class SonosService implements SonosSoap {
 	}
 	
 	private void sentMetricsEvent(String userId, String eventName, JSONObject properties) {
+		properties = new JSONObject("{"
+				+ "          \"properties\": {"
+				+ "               \"environment\": \"gcp\""
+				+ "          }"
+				+ "     }");
+		
 		JSONObject sentEvent = messageBuilder.event(userId, eventName, properties);
 	    
         ClientDelivery delivery = new ClientDelivery();
