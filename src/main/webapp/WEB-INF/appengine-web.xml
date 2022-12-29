@@ -11,5 +11,6 @@
 	<env-variables>
 		<env-var name="GRAPH_CLIENT_ID" value="GRAPH_CLIENT_ID_VAR" />
 		<env-var name="MIXPANEL_PROJECT_TOKEN" value="MIXPANEL_PROJECT_TOKEN_VAR" />
+		<env-var name="JAVA_TOOL_OPTIONS" value="-agentpath:/opt/cprof/profiler_java_agent.so=-logtostderr,-cprof_enable_heap_sampling=true" />
 	</env-variables>
 </appengine-web-app>
