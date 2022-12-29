@@ -11,5 +11,6 @@
 	<env-variables>
 		<env-var name="GRAPH_CLIENT_ID" value="GRAPH_CLIENT_ID_VAR" />
 		<env-var name="MIXPANEL_PROJECT_TOKEN" value="MIXPANEL_PROJECT_TOKEN_VAR" />
+		<env-var name="JAVA_USER_OPTS" value="-Xss256kb" />
 	</env-variables>
 </appengine-web-app>
