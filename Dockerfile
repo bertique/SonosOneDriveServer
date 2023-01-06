@@ -13,4 +13,4 @@ RUN mvn clean install package
 
 EXPOSE $PORT
 
-CMD jetty:run -Djetty.http.port=$PORT
+CMD mvn jetty:run -Djetty.http.port=$PORT
