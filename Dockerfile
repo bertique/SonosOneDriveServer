@@ -9,8 +9,8 @@ RUN apt-get install maven -y
 
 ADD . /src
 
-RUN mvn clean install
+RUN mvn clean install package
 
-EXPOSE 8080
+EXPOSE $PORT
 
-CMD mvn clean package jetty:run
+CMD jetty:run -Djetty.http.port=$PORT
