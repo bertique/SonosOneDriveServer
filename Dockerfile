@@ -9,7 +9,7 @@ RUN apt-get install maven -y
 
 ADD . /src
 
-RUN cd /src; mvn clean install
+RUN mvn clean install
 
 EXPOSE 8080
 
