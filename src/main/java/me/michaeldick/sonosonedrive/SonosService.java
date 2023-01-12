@@ -17,6 +17,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Form;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
@@ -36,8 +37,9 @@ import org.apache.cxf.helpers.CastUtils;
 import org.apache.cxf.jaxb.JAXBDataBinding;
 import org.apache.cxf.jaxws.context.WrappedMessageContext;
 import org.apache.cxf.message.Message;
-import org.apache.log4j.Logger;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
 
 import com.google.gson.JsonArray;
@@ -90,8 +92,7 @@ import com.sonos.services._1.UserInfo;
 import com.sonos.services._1_1.CustomFault;
 import com.sonos.services._1_1.SonosSoap;
 
-import me.michaeldick.sonosonedrive.model.GraphAuth;
-import me.michaeldick.sonosonedrive.model.Item;
+import me.michaeldick.sonosonedrive.model.*;
 
 @WebService
 public class SonosService implements SonosSoap {
@@ -123,13 +124,15 @@ public class SonosService implements SonosSoap {
     private static final String DRIVE_ROOT = "/me/drive/root";
     private static final String DRIVE_APPFOLDER = "/drive/special/approot";
     
+    private static final int CAN_PLAY_COUNT = 100;
+    
     private static String AUTH_API_URI;
     private static String GRAPH_API_URI;
     private static boolean isDebug = false;
         
     // Disable severe log message for SoapFault
     private static java.util.logging.Logger COM_ROOT_LOGGER = java.util.logging.Logger.getLogger("com.sun.xml.internal.messaging.saaj.soap.ver1_1");
-    private static Logger logger = Logger.getLogger(SonosService.class.getSimpleName());
+    private static Logger logger = LoggerFactory.getLogger(SonosService.class);
     private static MessageBuilder messageBuilder;
     
     @Resource
@@ -150,6 +153,8 @@ public class SonosService implements SonosSoap {
     	initializeMetrics();
     	
     	COM_ROOT_LOGGER.setLevel(java.util.logging.Level.OFF);
+    	
+    	logger.info("Initialized SonosService");
     }
     
     public SonosService () {
@@ -161,6 +166,8 @@ public class SonosService implements SonosSoap {
     	initializeMetrics();
     	
     	COM_ROOT_LOGGER.setLevel(java.util.logging.Level.OFF);
+    	
+    	logger.info("Initialized SonosService");
     }   
     
     public void initializeMetrics() {    	    	
@@ -299,11 +306,15 @@ public class SonosService implements SonosSoap {
 		} catch (NotAuthorizedException e) {			
 			logger.info(householdId.hashCode() +": login NotAuthorized, sending LOGIN_INVALID");
 			logger.debug(householdId.hashCode() +": "+e.getMessage());
-			logger.error(e.getResponse().readEntity(String.class));
+			try (Response r = e.getResponse()) {
+				logger.error(r.readEntity(String.class));
+			}			
 			throwSoapFault(LOGIN_INVALID);
 		} catch (BadRequestException e) {
 			logger.error("Bad request: "+e.getMessage());
-			logger.error(e.getResponse().readEntity(String.class));
+			try (Response r = e.getResponse()) {
+				logger.error(r.readEntity(String.class));
+			}
 			throwSoapFault(SERVICE_UNKNOWN_ERROR);
 		}
 		
@@ -354,17 +365,22 @@ public class SonosService implements SonosSoap {
 		} catch (NotAuthorizedException e) {
 			logger.info(householdId.hashCode() +": Not linked retry");
 			logger.debug(householdId.hashCode() +": "+e.getMessage());
-			logger.debug(householdId.hashCode() +": Detailed response: "+e.getResponse().readEntity(String.class));
+			try (Response r = e.getResponse()) {
+				logger.debug(householdId.hashCode() +": Detailed response: "+r.readEntity(String.class));
+			}
 			throwSoapFault(NOT_LINKED_RETRY, "NOT_LINKED_RETRY", "5");
 		} catch (BadRequestException e) {
-			JsonObject element = JsonParser.parseString(e.getResponse().readEntity(String.class)).getAsJsonObject();			
+			try (Response r = e.getResponse()) {							
+				JsonObject element = JsonParser.parseString(r.readEntity(String.class)).getAsJsonObject();			
+				
+			    if(element.get("error").getAsString().equals("authorization_pending")) {
+					logger.info(householdId.hashCode() +": Not linked retry");				
+					throwSoapFault(NOT_LINKED_RETRY, "NOT_LINKED_RETRY", "5");
+			    }
+				logger.error("Bad request: "+e.getMessage());
 			
-		    if(element.get("error").getAsString().equals("authorization_pending")) {
-				logger.info(householdId.hashCode() +": Not linked retry");				
-				throwSoapFault(NOT_LINKED_RETRY, "NOT_LINKED_RETRY", "5");
-		    }
-			logger.error("Bad request: "+e.getMessage());
-			logger.error(e.getResponse().readEntity(String.class));
+				logger.error(r.readEntity(String.class));
+			}
 			throwSoapFault(NOT_LINKED_FAILURE, "NOT_LINKED_FAILURE", "6");
 		}
 		
@@ -559,20 +575,25 @@ public class SonosService implements SonosSoap {
 			
 		} catch (NotAuthorizedException e) {
 			logger.debug("request NotAuthorized: "+e.getMessage()+", trying to refresh token");		
-			logger.error(e.getResponse().readEntity(String.class));
+			try (Response r = e.getResponse()) {
+				logger.error(r.readEntity(String.class));
+			}
 			GraphAuth newAuth = refreshToken();
 			throwSoapFault(TOKEN_REFRESH_REQUIRED, newAuth);		
 		} catch (BadRequestException e) {
 			logger.error("Bad request: "+e.getMessage());
-			logger.error(e.getResponse().readEntity(String.class));
-			JsonParser parser = new JsonParser();
-	        JsonElement element = parser.parse(e.getResponse().readEntity(String.class));
-	        if(element.isJsonObject()) {
-	        	JsonObject o = element.getAsJsonObject();
-	        	if(o.has("error") && o.get("error").getAsString().equals("invalid_grant")) {
-	        		throwSoapFault(AUTH_TOKEN_EXPIRED);
-	        	}
-	        }
+			try (Response r = e.getResponse()) {
+				logger.error(r.readEntity(String.class));
+			
+		        JsonElement element = JsonParser.parseString(r.readEntity(String.class));
+		        if(element.isJsonObject()) {
+		        	JsonObject o = element.getAsJsonObject();
+		        	if(o.has("error") && o.get("error").getAsString().equals("invalid_grant")) {
+		        		logger.info("Throwing expired token during API refresh");
+		        		throwSoapFault(AUTH_TOKEN_EXPIRED);
+		        	}
+		        }
+			}
 		}		
 		return json;
 	}
@@ -588,7 +609,9 @@ public class SonosService implements SonosSoap {
         	
             for (int i = 0; i < mainResultList.size(); i++) { 
             	Item m = new Item(mainResultList.get(i).getAsJsonObject());
-            	if(m.getType()==Item.FileType.audio 
+            	if(m.getType()==null) { 
+            		logger.debug("Ignoring item with null type (e.g. .url files): "+m.getName());
+            	} else if(m.getType()==Item.FileType.audio 
             			|| (m.getType()==Item.FileType.file && m.getName().endsWith(".flac"))
             			|| (m.getType().equals(Item.FileType.file) && m.getMimeType().contains("audio"))) {
             		mcList.add(buildMMD(m));
@@ -648,7 +671,7 @@ public class SonosService implements SonosSoap {
 			mc.setId(SonosService.FOLDER+":"+m.getId());
 			mc.setItemType(ItemType.COLLECTION);
 			mc.setTitle(m.getName());
-			if(m.getChildCount() < 40) {
+			if(m.getChildCount() < CAN_PLAY_COUNT) {
 				mc.setCanPlay(true);
 			} else {
 				mc.setCanPlay(false);
@@ -814,6 +837,12 @@ public class SonosService implements SonosSoap {
 	}
 	
 	private void sentMetricsEvent(String userId, String eventName, JSONObject properties) {
+		properties = new JSONObject("{"
+				+ "          \"properties\": {"
+				+ "               \"environment\": \"gcp\""
+				+ "          }"
+				+ "     }");
+		
 		JSONObject sentEvent = messageBuilder.event(userId, eventName, properties);
 	    
         ClientDelivery delivery = new ClientDelivery();
@@ -880,24 +909,27 @@ public class SonosService implements SonosSoap {
 		} catch (NotAuthorizedException e) {
 			logger.info(auth.getHouseholdId().hashCode() +": Not linked retry");
 			logger.debug(auth.getHouseholdId().hashCode() +": "+e.getMessage());
-			logger.debug(auth.getHouseholdId().hashCode() +": Detailed response: "+e.getResponse().readEntity(String.class));
+			try (Response r = e.getResponse()) {
+				logger.debug(auth.getHouseholdId().hashCode() +": Detailed response: "+r.readEntity(String.class));
+			}
 			throwSoapFault(AUTH_TOKEN_EXPIRED);
 		} catch (BadRequestException e) {
 			logger.error("Bad request: "+e.getMessage());
-			logger.debug(auth.getHouseholdId().hashCode() +": Detailed response: "+e.getResponse().readEntity(String.class));
-			JsonParser parser = new JsonParser();
-	        JsonElement element = parser.parse(e.getResponse().readEntity(String.class));
-	        if(element.isJsonObject()) {
-	        	JsonObject o = element.getAsJsonObject();
-	        	if(o.has("error") && o.get("error").getAsString().equals("invalid_grant")) {
-	        		throwSoapFault(AUTH_TOKEN_EXPIRED);
-	        	}
-	        }
+			try (Response r = e.getResponse()) {
+				logger.debug(auth.getHouseholdId().hashCode() +": Detailed response: "+r.readEntity(String.class));			
+		        JsonElement element = JsonParser.parseString(r.readEntity(String.class));
+		        if(element.isJsonObject()) {
+		        	JsonObject o = element.getAsJsonObject();
+		        	if(o.has("error") && o.get("error").getAsString().equals("invalid_grant")) {
+		        		logger.info("Throwing expired token during refresh");
+		        		throwSoapFault(AUTH_TOKEN_EXPIRED);
+		        	}
+		        }
+			}
 			throwSoapFault(SERVICE_UNKNOWN_ERROR);
 		}
-		
-		JsonParser parser = new JsonParser();
-        JsonElement element = parser.parse(json);
+				
+        JsonElement element = JsonParser.parseString(json);
         GraphAuth newAuth = new GraphAuth(); 
         if (element.isJsonObject()) {
         	JsonObject root = element.getAsJsonObject();

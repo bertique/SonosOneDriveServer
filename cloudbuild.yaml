@@ -1,0 +1,29 @@
+steps:
+- name: maven:3.8.3-openjdk-17
+  entrypoint: mvn
+  args: ['--version']
+- name: maven:3.8.3-openjdk-17
+  entrypoint: mvn
+  args: ['test']
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  entrypoint: 'bash'
+  args:
+      - -c
+      - |
+        echo 'my api key from secret manager is '$$GRAPH_CLIENT_ID_VAR' and'$$MIXPANEL_PROJECT_TOKEN_VAR
+        sed -i "s|GRAPH_CLIENT_ID_VAR|$$GRAPH_CLIENT_ID_VAR|g" src/main/webapp/WEB-INF/appengine-web.xml
+        sed -i "s|MIXPANEL_PROJECT_TOKEN_VAR|$$MIXPANEL_PROJECT_TOKEN_VAR|g" src/main/webapp/WEB-INF/appengine-web.xml
+        cat src/main/webapp/WEB-INF/appengine-web.xml # you can now see the secret value inserted as the env variable
+  secretEnv: ['GRAPH_CLIENT_ID_VAR','MIXPANEL_PROJECT_TOKEN_VAR']
+- name: maven:3.8.3-openjdk-17
+  entrypoint: mvn
+  args: ['package','-Dmaven.test.skip=true']
+- name: maven:3-jdk-8
+  entrypoint: mvn
+  args: ['appengine:deploy','-Dapp.deploy.projectId=sonosonedrive-on-gcp','-Dapp.deploy.version=GCLOUD_CONFIG','-Dapp.deploy.promote=true']
+availableSecrets:
+  secretManager:
+  - versionName: projects/$PROJECT_ID/secrets/SONOSONEDRIVE_GRAPH_CLIENT_ID/versions/latest
+    env: 'GRAPH_CLIENT_ID_VAR'
+  - versionName: projects/$PROJECT_ID/secrets/SONOSONEDRIVE_MIXPANEL_PROJECT_TOKEN/versions/latest
+    env: 'MIXPANEL_PROJECT_TOKEN_VAR'

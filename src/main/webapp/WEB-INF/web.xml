@@ -1,22 +1,17 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-
 <!DOCTYPE web-app
     PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
     "http://java.sun.com/dtd/web-app_2_3.dtd">
-
 <web-app>
-
 	<context-param>
 		<param-name>contextConfigLocation</param-name>
 		<param-value>WEB-INF/beans.xml</param-value>
 	</context-param>
-
 	<listener>
 		<listener-class>
 			org.springframework.web.context.ContextLoaderListener
 		</listener-class>
 	</listener>
-
 	<servlet>
 		<servlet-name>CXFServlet</servlet-name>
 		<display-name>CXF Servlet</display-name>
@@ -25,7 +20,6 @@
 		</servlet-class>
 		<load-on-startup>1</load-on-startup>
 	</servlet>
-
 	<servlet-mapping>
 		<servlet-name>CXFServlet</servlet-name>
 		<url-pattern>/soap/*</url-pattern>
@@ -34,5 +28,12 @@
 		<servlet-name>CXFServlet</servlet-name>
 		<url-pattern>/soap_appfolder/*</url-pattern>
 	</servlet-mapping>
-
+	<servlet>
+		<servlet-name>Asset Links</servlet-name>
+		<jsp-file>/_well-known/microsoft-identity-association.json.jsp</jsp-file>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>Asset Links</servlet-name>
+		<url-pattern>/.well-known/microsoft-identity-association.json</url-pattern>
+	</servlet-mapping>
 </web-app>

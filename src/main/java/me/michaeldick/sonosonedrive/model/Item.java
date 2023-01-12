@@ -1,7 +1,5 @@
 package me.michaeldick.sonosonedrive.model;
 
-import javax.sound.midi.Track;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 

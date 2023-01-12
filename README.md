@@ -20,7 +20,7 @@ See instructions at [https://michaeldick.me/sonos-onedrive/](https://michaeldick
 * Create new Maven build configuration with environment variables:
 * GRAPH_CLIENT_ID 
 * Generate the ssl key once through Maven: *keytool:generateKeyPair*
-* Run Maven target: *tomcat7:run-war*
+* Run Maven target: *tomcat:run-war*
 
 ## Run service on Heroku
 * Create new Heroku app

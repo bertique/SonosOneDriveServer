@@ -12,7 +12,7 @@
 
 		<mvc:default-servlet-handler />
 		<mvc:resources mapping="/static/**" location="/static/"/>
-		   
+			    
         <jaxws:endpoint 
           id="SonosService" 
           implementor="me.michaeldick.sonosonedrive.SonosService" 
