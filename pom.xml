@@ -9,7 +9,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<cxfVersion>3.5.4</cxfVersion>
-		<logbackVersion>1.4.4</logbackVersion>
+		<logbackVersion>1.4.12</logbackVersion>
 	</properties>
 	<repositories>
 		<repository>
