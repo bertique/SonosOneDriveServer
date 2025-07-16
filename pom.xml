@@ -24,22 +24,22 @@
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-webmvc</artifactId>
-			<version>5.3.24</version>
+			<version>6.1.21</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.cxf</groupId>
 			<artifactId>cxf-rt-frontend-jaxws</artifactId>
-			<version>${cxfVersion}</version>
+			<version>3.5.10</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.cxf</groupId>
 			<artifactId>cxf-rt-transports-http</artifactId>
-			<version>${cxfVersion}</version>
+			<version>3.5.10</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.cxf</groupId>
 			<artifactId>cxf-rt-transports-http-jetty</artifactId>
-			<version>${cxfVersion}</version>
+			<version>3.5.11</version>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
@@ -49,7 +49,7 @@
 		<dependency>
 			<groupId>org.apache.cxf</groupId>
 			<artifactId>cxf-rt-rs-client</artifactId>
-			<version>${cxfVersion}</version>
+			<version>3.5.10</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
@@ -59,7 +59,7 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-log4j12</artifactId>
-			<version>1.7.5</version>
+			<version>1.7.34</version>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
@@ -69,17 +69,17 @@
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-core</artifactId>
-			<version>${logbackVersion}</version>
+			<version>1.5.13</version>
 		</dependency>
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
-			<version>${logbackVersion}</version>
+			<version>1.5.13</version>
 		</dependency>
 		<dependency>
 			<groupId>com.mixpanel</groupId>
 			<artifactId>mixpanel-java</artifactId>
-			<version>1.5.1</version>
+			<version>1.5.3</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.appengine</groupId>
@@ -89,7 +89,7 @@
 		<dependency>
 			<groupId>com.google.cloud</groupId>
 			<artifactId>google-cloud-logging-logback</artifactId>
-			<version>0.129.3-alpha</version>
+			<version>0.130.24-alpha</version>
 		</dependency>
 	</dependencies>
 	<build>
