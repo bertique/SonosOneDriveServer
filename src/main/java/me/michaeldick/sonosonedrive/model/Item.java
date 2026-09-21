@@ -45,7 +45,7 @@ public class Item {
         		album = audioAttributes.has("album") ? audioAttributes.get("album").getAsString() : null;
         		artist = audioAttributes.has("artist") ? audioAttributes.get("artist").getAsString() : null;
         		title = audioAttributes.has("title") ? audioAttributes.get("title").getAsString() : null;
-        		duration = audioAttributes.has("duration") ? audioAttributes.get("duration").getAsInt()/1000 : null;    
+        		duration = audioAttributes.has("duration") ? audioAttributes.get("duration").getAsInt()/1000 : 0;
         		track = audioAttributes.has("track") ? audioAttributes.get("track").getAsInt() : 1;
         	} else {
         		type = FileType.file;        		

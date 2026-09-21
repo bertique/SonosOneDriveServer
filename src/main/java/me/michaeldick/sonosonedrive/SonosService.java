@@ -1,6 +1,7 @@
 package me.michaeldick.sonosonedrive;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 import java.util.Properties;
@@ -11,6 +12,8 @@ import javax.annotation.Resource;
 import javax.jws.WebService;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotAuthorizedException;
+import javax.ws.rs.NotFoundException;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -297,25 +300,22 @@ public class SonosService implements SonosSoap {
 				
 		// https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code		
 		String json = "";
+		Client client = ClientBuilder.newClient();
 		try {
-			Client client = ClientBuilder.newClient();
 			json = client.target(AUTH_API_URI+"devicecode")
 					.request(MediaType.APPLICATION_FORM_URLENCODED_TYPE)
 					.post(Entity.entity(form,MediaType.APPLICATION_FORM_URLENCODED_TYPE), String.class);
-			client.close();
-		} catch (NotAuthorizedException e) {			
+		} catch (NotAuthorizedException e) {
 			logger.info(householdId.hashCode() +": login NotAuthorized, sending LOGIN_INVALID");
 			logger.debug(householdId.hashCode() +": "+e.getMessage());
-			try (Response r = e.getResponse()) {
-				logger.error(r.readEntity(String.class));
-			}			
+			logger.error(readBody(e.getResponse()));
 			throwSoapFault(LOGIN_INVALID);
 		} catch (BadRequestException e) {
 			logger.error("Bad request: "+e.getMessage());
-			try (Response r = e.getResponse()) {
-				logger.error(r.readEntity(String.class));
-			}
+			logger.error(readBody(e.getResponse()));
 			throwSoapFault(SERVICE_UNKNOWN_ERROR);
+		} finally {
+			client.close();
 		}
 		
         JsonElement element = JsonParser.parseString(json);
@@ -356,45 +356,44 @@ public class SonosService implements SonosSoap {
 		form.param("grant_type", "urn:ietf:params:oauth:grant-type:device_code");
 		
 		String json = "";
+		Client client = ClientBuilder.newClient();
 		try {
-			Client client = ClientBuilder.newClient();
 			json = client.target(AUTH_API_URI + "token")
 					.request(MediaType.APPLICATION_FORM_URLENCODED_TYPE)
 					.post(Entity.entity(form,MediaType.APPLICATION_FORM_URLENCODED_TYPE), String.class);
-			client.close();
 		} catch (NotAuthorizedException e) {
 			logger.info(householdId.hashCode() +": Not linked retry");
 			logger.debug(householdId.hashCode() +": "+e.getMessage());
-			try (Response r = e.getResponse()) {
-				logger.debug(householdId.hashCode() +": Detailed response: "+r.readEntity(String.class));
-			}
+			logger.debug(householdId.hashCode() +": Detailed response: "+readBody(e.getResponse()));
 			throwSoapFault(NOT_LINKED_RETRY, "NOT_LINKED_RETRY", "5");
 		} catch (BadRequestException e) {
-			try (Response r = e.getResponse()) {							
-				JsonObject element = JsonParser.parseString(r.readEntity(String.class)).getAsJsonObject();			
-				
-			    if(element.get("error").getAsString().equals("authorization_pending")) {
-					logger.info(householdId.hashCode() +": Not linked retry");				
-					throwSoapFault(NOT_LINKED_RETRY, "NOT_LINKED_RETRY", "5");
-			    }
-				logger.error("Bad request: "+e.getMessage());
-			
-				logger.error(r.readEntity(String.class));
+			String body = readBody(e.getResponse());
+			if("authorization_pending".equals(getErrorCode(body))) {
+				logger.info(householdId.hashCode() +": Not linked retry");
+				throwSoapFault(NOT_LINKED_RETRY, "NOT_LINKED_RETRY", "5");
 			}
+			logger.error("Bad request: "+e.getMessage());
+			logger.error(body);
 			throwSoapFault(NOT_LINKED_FAILURE, "NOT_LINKED_FAILURE", "6");
+		} finally {
+			client.close();
 		}
-		
+
 		JsonElement element = JsonParser.parseString(json);
-        String access_token = "";
-        String refresh_token = ""; 
+        String access_token = null;
+        String refresh_token = null;
         if (element.isJsonObject()) {
         	JsonObject root = element.getAsJsonObject();
-        	access_token = root.has("access_token") ? root.get("access_token").getAsString() : null;      
+        	access_token = root.has("access_token") ? root.get("access_token").getAsString() : null;
         	refresh_token = root.has("refresh_token") ? root.get("refresh_token").getAsString() : null;
             logger.info(householdId.hashCode() +": Got token");
         }
+        if(access_token == null) {
+        	logger.error(householdId.hashCode() +": Token response had no access_token");
+        	throwSoapFault(NOT_LINKED_FAILURE, "NOT_LINKED_FAILURE", "6");
+        }
 
-        if(access_token.length() > 2048) {		
+        if(access_token.length() > 2048) {
         	access_token = compressToken(access_token);
         }
 		               
@@ -494,21 +493,29 @@ public class SonosService implements SonosSoap {
 			String skipToken = null;
 
 			if(parameters.getIndex() > 0) {
-				skipToken = getSkipToken(path, parameters.getIndex(), auth);			
+				skipToken = getSkipToken(path, parameters.getIndex(), auth);
 			}
-			
-			String json = graphApiGetRequest(path, parameters.getCount(), skipToken, auth);						
-			ml = parseMediaListResponse(auth.getHouseholdId(), json);				
+
+			if(parameters.getIndex() > 0 && skipToken == null) {
+				ml = pastEndMediaList(parameters.getIndex());
+			} else {
+				String json = graphApiGetRequest(path, parameters.getCount(), skipToken, auth);
+				ml = parseMediaListResponse(auth.getHouseholdId(), json);
+			}
 		} else if(parameters.getId().startsWith(SonosService.FOLDER)) {
 			String path = String.format("/me/drive/items/%s/children", parameters.getId().replaceAll(SonosService.FOLDER+":",""));
 			String skipToken = null;
 			
 			if(parameters.getIndex() > 0) {
-				skipToken = getSkipToken(path, parameters.getIndex(), auth);			
-			}			
-			
-			String json = graphApiGetRequest(path, parameters.getCount(), skipToken, auth);						
-			ml = parseMediaListResponse(auth.getHouseholdId(), json);
+				skipToken = getSkipToken(path, parameters.getIndex(), auth);
+			}
+
+			if(parameters.getIndex() > 0 && skipToken == null) {
+				ml = pastEndMediaList(parameters.getIndex());
+			} else {
+				String json = graphApiGetRequest(path, parameters.getCount(), skipToken, auth);
+				ml = parseMediaListResponse(auth.getHouseholdId(), json);
+			}
 		} else if(parameters.getId().equals(ItemType.SEARCH.value())) {						
 			List<AbstractMedia> mcList = ml.getMediaCollectionOrMediaMetadata();
 			
@@ -535,23 +542,62 @@ public class SonosService implements SonosSoap {
 	private String getSkipToken(String path, int index, GraphAuth auth) {
 		String skipToken = null;
 		String json = graphApiGetRequest(path, index, null, auth);
-		JsonElement element = JsonParser.parseString(json);					        				
-		Pattern pattern = Pattern.compile("\\$skiptoken=(.+)", Pattern.CASE_INSENSITIVE);
-		Matcher matcher = pattern.matcher(element.getAsJsonObject().get("@odata.nextLink").getAsString());
-		if (matcher.find())
-		{
-		    skipToken = matcher.group(1);
+		JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+		// No nextLink means the requested index is at or past the end of the list
+		if(root.has("@odata.nextLink")) {
+			Pattern pattern = Pattern.compile("\\$skiptoken=([^&]+)", Pattern.CASE_INSENSITIVE);
+			Matcher matcher = pattern.matcher(root.get("@odata.nextLink").getAsString());
+			if (matcher.find())
+			{
+			    skipToken = matcher.group(1);
+			}
 		}
-		int numResults = element.getAsJsonObject().getAsJsonArray("value").size();
+		JsonArray values = root.getAsJsonArray("value");
+		int numResults = values != null ? values.size() : 0;
 		logger.debug(String.format("Iteration Complete results %d, goalIndex %d", numResults, index));
 		logger.debug("SkipToken "+skipToken);
 		return skipToken;
 	}
+
+	private static MediaList pastEndMediaList(int index) {
+		MediaList ml = new MediaList();
+		ml.setCount(0);
+		ml.setTotal(index);
+		return ml;
+	}
+
+	private static String readBody(Response r) {
+		try (Response response = r) {
+			return response.readEntity(String.class);
+		} catch (RuntimeException e) {
+			return "";
+		}
+	}
+
+	private static String getErrorCode(String body) {
+		try {
+			JsonElement element = JsonParser.parseString(body);
+			if(element.isJsonObject() && element.getAsJsonObject().has("error")) {
+				JsonElement error = element.getAsJsonObject().get("error");
+				return error.isJsonPrimitive() ? error.getAsString() : null;
+			}
+		} catch (RuntimeException e) {
+			// Not JSON
+		}
+		return null;
+	}
+
+	private static boolean isAudio(Item m) {
+		return m.getType() == Item.FileType.audio
+				|| (m.getType() == Item.FileType.file
+					&& ((m.getName() != null && m.getName().endsWith(".flac"))
+						|| (m.getMimeType() != null && m.getMimeType().contains("audio"))));
+	}
 	
 	private String graphApiGetRequest(String path, int count, String skipToken, GraphAuth auth) {
 		String json = "";
-		try {	
-			Client client = ClientBuilder.newClient();
+		Client client = ClientBuilder.newClient();
+		try {
 			WebTarget target = client
 					.target(GRAPH_API_URI)
 					.path(path);
@@ -571,30 +617,31 @@ public class SonosService implements SonosSoap {
 			json = target.request(MediaType.APPLICATION_JSON_TYPE)
 				  .header("Authorization", "Bearer " + auth.getDeviceCode())
 				  .get(String.class);
-			client.close();
-			
 		} catch (NotAuthorizedException e) {
-			logger.debug("request NotAuthorized: "+e.getMessage()+", trying to refresh token");		
-			try (Response r = e.getResponse()) {
-				logger.error(r.readEntity(String.class));
-			}
+			logger.debug("request NotAuthorized: "+e.getMessage()+", trying to refresh token");
+			logger.error(readBody(e.getResponse()));
 			GraphAuth newAuth = refreshToken();
-			throwSoapFault(TOKEN_REFRESH_REQUIRED, newAuth);		
+			throwSoapFault(TOKEN_REFRESH_REQUIRED, newAuth);
 		} catch (BadRequestException e) {
 			logger.error("Bad request: "+e.getMessage());
-			try (Response r = e.getResponse()) {
-				logger.error(r.readEntity(String.class));
-			
-		        JsonElement element = JsonParser.parseString(r.readEntity(String.class));
-		        if(element.isJsonObject()) {
-		        	JsonObject o = element.getAsJsonObject();
-		        	if(o.has("error") && o.get("error").getAsString().equals("invalid_grant")) {
-		        		logger.info("Throwing expired token during API refresh");
-		        		throwSoapFault(AUTH_TOKEN_EXPIRED);
-		        	}
-		        }
+			String body = readBody(e.getResponse());
+			logger.error(body);
+			if("invalid_grant".equals(getErrorCode(body))) {
+				logger.info("Throwing expired token during API refresh");
+				throwSoapFault(AUTH_TOKEN_EXPIRED);
 			}
-		}		
+			throwSoapFault(SERVICE_UNKNOWN_ERROR);
+		} catch (NotFoundException e) {
+			logger.error("Not found: "+e.getMessage());
+			readBody(e.getResponse());
+			throwSoapFault(ITEM_NOT_FOUND);
+		} catch (WebApplicationException e) {
+			logger.error("Graph API error: "+e.getMessage());
+			readBody(e.getResponse());
+			throwSoapFault(SERVICE_UNAVAILABLE);
+		} finally {
+			client.close();
+		}
 		return json;
 	}
 	
@@ -611,9 +658,7 @@ public class SonosService implements SonosSoap {
             	Item m = new Item(mainResultList.get(i).getAsJsonObject());
             	if(m.getType()==null) { 
             		logger.debug("Ignoring item with null type (e.g. .url files): "+m.getName());
-            	} else if(m.getType()==Item.FileType.audio 
-            			|| (m.getType()==Item.FileType.file && m.getName().endsWith(".flac"))
-            			|| (m.getType().equals(Item.FileType.file) && m.getMimeType().contains("audio"))) {
+            	} else if(isAudio(m)) {
             		mcList.add(buildMMD(m));
             	} else if(m.getType() == Item.FileType.folder
             			|| m.getType() == Item.FileType.file) {
@@ -639,9 +684,7 @@ public class SonosService implements SonosSoap {
 	private static MediaCollection buildMC(Item m) {	
 		MediaCollection mc = new MediaCollection();
 				
-		if(m.getType().equals(Item.FileType.audio)
-				|| (m.getType().equals(Item.FileType.file) && m.getName().endsWith(".flac"))
-				|| (m.getType().equals(Item.FileType.file) && m.getMimeType().contains("audio"))) {			
+		if(isAudio(m)) {
 			mc.setId(SonosService.AUDIO+":"+m.getId());
 			mc.setItemType(ItemType.TRACK);
 			if(m.getTitle() != null && !m.getTitle().isEmpty()) {
@@ -689,9 +732,9 @@ public class SonosService implements SonosSoap {
 			return null;
 		
 		mmd.setId(m.getId());
-		if(m.getType().equals(Item.FileType.file) && m.getName().endsWith(".flac")) {
+		if(m.getType() == Item.FileType.file && m.getName() != null && m.getName().endsWith(".flac")) {
 			mmd.setMimeType("audio/flac");
-		} else if (m.getMimeType().endsWith("wma")) {
+		} else if (m.getMimeType() != null && m.getMimeType().endsWith("wma")) {
 			mmd.setMimeType("audio/wma");
 		}
 		else {
@@ -780,13 +823,17 @@ public class SonosService implements SonosSoap {
 		String skipToken = null;
 
 		if(parameters.getIndex() > 0) {
-			skipToken = getSkipToken(path, parameters.getIndex(), auth);			
+			skipToken = getSkipToken(path, parameters.getIndex(), auth);
 		}
-		
-		String json = graphApiGetRequest(path, parameters.getCount(), skipToken, auth);						
+
 		SearchResponse response = new SearchResponse();
-        MediaList ml = new MediaList();
-		ml = parseMediaListResponse(auth.getHouseholdId(), json);
+        MediaList ml;
+		if(parameters.getIndex() > 0 && skipToken == null) {
+			ml = pastEndMediaList(parameters.getIndex());
+		} else {
+			String json = graphApiGetRequest(path, parameters.getCount(), skipToken, auth);
+			ml = parseMediaListResponse(auth.getHouseholdId(), json);
+		}
 		// Remove 1 since personal vault is not included in response
 		ml.setTotal(ml.getTotal());
 		ml.setIndex(parameters.getIndex());
@@ -824,9 +871,10 @@ public class SonosService implements SonosSoap {
 		String compressed_token = null;
 		String[] tokenParts = token.split("\\.");			
 		if(tokenParts.length==3) {						
-			byte[] decodedFirstTokenPart = Base64.getDecoder().decode(tokenParts[0]);			
-			byte[] decodedSecondTokenPart = Base64.getDecoder().decode(tokenParts[1]);		
-			compressed_token = String.format("%s###%s###%s", new String(decodedFirstTokenPart), new String(decodedSecondTokenPart), tokenParts[2]);
+			// JWT segments are base64url encoded
+			byte[] decodedFirstTokenPart = Base64.getUrlDecoder().decode(tokenParts[0]);
+			byte[] decodedSecondTokenPart = Base64.getUrlDecoder().decode(tokenParts[1]);
+			compressed_token = String.format("%s###%s###%s", new String(decodedFirstTokenPart, StandardCharsets.UTF_8), new String(decodedSecondTokenPart, StandardCharsets.UTF_8), tokenParts[2]);
 			if (compressed_token.length() > 2048) {
 				logger.error("Compressed token too long");
 			}
@@ -868,9 +916,10 @@ public class SonosService implements SonosSoap {
 		
 			String[] tokenParts = creds.getLoginToken().getToken().split("###");
 			if(tokenParts.length==3) {						
-				byte[] encodedFirstTokenPart = Base64.getEncoder().encode(tokenParts[0].getBytes());			
-				byte[] encodedSecondTokenPart = Base64.getEncoder().encode(tokenParts[1].getBytes());		
-				access_token = String.format("%s.%s.%s", new String(encodedFirstTokenPart).replace("=", ""), new String(encodedSecondTokenPart).replace("=", ""), tokenParts[2]);
+				Base64.Encoder encoder = Base64.getUrlEncoder().withoutPadding();
+				String encodedFirstTokenPart = encoder.encodeToString(tokenParts[0].getBytes(StandardCharsets.UTF_8));
+				String encodedSecondTokenPart = encoder.encodeToString(tokenParts[1].getBytes(StandardCharsets.UTF_8));
+				access_token = String.format("%s.%s.%s", encodedFirstTokenPart, encodedSecondTokenPart, tokenParts[2]);
 			} else {
 				throwSoapFault(NOT_LINKED_FAILURE);		
 			}
@@ -900,33 +949,27 @@ public class SonosService implements SonosSoap {
 		}
 		
 		String json = "";
+		Client client = ClientBuilder.newClient();
 		try {
-			Client client = ClientBuilder.newClient();
 			json = client.target(AUTH_API_URI + "token")
 					.request(MediaType.APPLICATION_FORM_URLENCODED_TYPE)
 					.post(Entity.entity(form,MediaType.APPLICATION_FORM_URLENCODED_TYPE), String.class);
-			client.close();
 		} catch (NotAuthorizedException e) {
 			logger.info(auth.getHouseholdId().hashCode() +": Not linked retry");
 			logger.debug(auth.getHouseholdId().hashCode() +": "+e.getMessage());
-			try (Response r = e.getResponse()) {
-				logger.debug(auth.getHouseholdId().hashCode() +": Detailed response: "+r.readEntity(String.class));
-			}
+			logger.debug(auth.getHouseholdId().hashCode() +": Detailed response: "+readBody(e.getResponse()));
 			throwSoapFault(AUTH_TOKEN_EXPIRED);
 		} catch (BadRequestException e) {
 			logger.error("Bad request: "+e.getMessage());
-			try (Response r = e.getResponse()) {
-				logger.debug(auth.getHouseholdId().hashCode() +": Detailed response: "+r.readEntity(String.class));			
-		        JsonElement element = JsonParser.parseString(r.readEntity(String.class));
-		        if(element.isJsonObject()) {
-		        	JsonObject o = element.getAsJsonObject();
-		        	if(o.has("error") && o.get("error").getAsString().equals("invalid_grant")) {
-		        		logger.info("Throwing expired token during refresh");
-		        		throwSoapFault(AUTH_TOKEN_EXPIRED);
-		        	}
-		        }
+			String body = readBody(e.getResponse());
+			logger.debug(auth.getHouseholdId().hashCode() +": Detailed response: "+body);
+			if("invalid_grant".equals(getErrorCode(body))) {
+				logger.info("Throwing expired token during refresh");
+				throwSoapFault(AUTH_TOKEN_EXPIRED);
 			}
 			throwSoapFault(SERVICE_UNKNOWN_ERROR);
+		} finally {
+			client.close();
 		}
 				
         JsonElement element = JsonParser.parseString(json);
